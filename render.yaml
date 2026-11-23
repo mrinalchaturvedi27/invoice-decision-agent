@@ -12,6 +12,10 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false          # set in the Render dashboard
       - key: ADMIN_TOKEN
-        generateValue: true  # protects "Reset demo ledger" on the public URL
+        generateValue: true  # protects reset of the default (non-sandbox) database
+      - key: REVIEWER_PASSCODE
+        sync: false          # set in the dashboard; share it with the link. Needed to start runs (model calls)
+      - key: MODEL_CALLS_PER_DAY
+        value: "300"         # server-wide cap on live Claude calls, rolling 24 h
       - key: DATA_DIR
         value: /data

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import logging
 import os
@@ -15,7 +16,7 @@ from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from app import config, db, queries
+from app import budget, config, db, queries
 from app.pipeline.explain import ClaudeExplainer
 from app.pipeline.extract import ClaudeExtractor
 from app.pipeline.runner import STAGES, Runner
@@ -29,7 +30,8 @@ async def lifespan(app: FastAPI):
     db.init()
     db.seed_if_empty()
     if getattr(app.state, "runner", None) is None:
-        app.state.runner = Runner(extractor=ClaudeExtractor(), explainer=ClaudeExplainer(),
+        app.state.runner = Runner(extractor=budget.Budgeted(ClaudeExtractor(), "extract"),
+                                  explainer=budget.Budgeted(ClaudeExplainer(), "explain"),
                                   pacing_ms=config.STAGE_PACING_MS)
     yield
 
@@ -46,6 +48,13 @@ def sandbox(x_workspace: str | None = Header(default=None), ws: str | None = Non
         raise HTTPException(400, "Invalid sandbox id")
     except db.SandboxLimit:
         raise HTTPException(503, "Too many sandboxes on this server; ask the admin to clear old ones")
+
+
+def reviewer(x_reviewer_passcode: str | None = Header(default=None)) -> None:
+    """Starting a run can cost a model call, so it needs the reviewer passcode when one is configured."""
+    if config.REVIEWER_PASSCODE and not hmac.compare_digest(
+            (x_reviewer_passcode or "").encode(), config.REVIEWER_PASSCODE.encode()):
+        raise HTTPException(401, "Reviewer passcode required to run invoices")
 
 
 def J(obj, status: int = 200) -> Response:
@@ -92,6 +101,7 @@ def health(sb: Path = Depends(sandbox)) -> Response:
     return J({"status": "ok", "policy_version": POLICY_VERSION, "extract_model": config.EXTRACT_MODEL,
               "model_credentials": bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")),
               "stages": STAGES, "sandbox": sb != db.default_path(),
+              "passcode_required": bool(config.REVIEWER_PASSCODE), "model_calls": budget.usage(),
               "reset_requires_token": bool(config.ADMIN_TOKEN) and sb == db.default_path()})
 
 
@@ -118,19 +128,19 @@ def sample_pdf(sample_id: str):
     return FileResponse(config.SAMPLES_DIR / m["file"], media_type="application/pdf", filename=m["file"])
 
 
-@app.post("/api/runs")
+@app.post("/api/runs", dependencies=[Depends(reviewer)])
 async def create_run(request: Request, file: UploadFile = File(...), sb: Path = Depends(sandbox)) -> Response:
     data = await file.read()
     return _start(request, sb, data, Path(file.filename or "upload.pdf").name)
 
 
-@app.post("/api/runs/sample/{sample_id}")
+@app.post("/api/runs/sample/{sample_id}", dependencies=[Depends(reviewer)])
 def create_sample_run(request: Request, sample_id: str, sb: Path = Depends(sandbox)) -> Response:
     m = _sample(sample_id)
     return _start(request, sb, (config.SAMPLES_DIR / m["file"]).read_bytes(), m["file"])
 
 
-@app.post("/api/runs/{run_id}/retry")
+@app.post("/api/runs/{run_id}/retry", dependencies=[Depends(reviewer)])
 def retry_run(request: Request, run_id: int, sb: Path = Depends(sandbox)) -> Response:
     conn = db.connect(sb)
     try:

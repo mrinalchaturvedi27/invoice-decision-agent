@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api, DecisionPill, go } from "../lib";
-import type { Sample } from "../types";
+import { api, ApiError, DecisionPill, go, passcode, setPasscode } from "../lib";
+import type { Health, Sample } from "../types";
 
-export default function Submit({ activeRunId }: { activeRunId: number | null }) {
+export default function Submit({ activeRunId, health }: { activeRunId: number | null; health: Health | null }) {
+  const [code, setCode] = useState(passcode());
+  const [draft, setDraft] = useState("");
+  const locked = !!health?.passcode_required && !code;
   const [samples, setSamples] = useState<Sample[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +19,7 @@ export default function Submit({ activeRunId }: { activeRunId: number | null }) 
     const t = setInterval(load, 3000);
     return () => clearInterval(t);
   }, [activeRunId]);
-  const nextId = samples.find((s) => s.runs.length === 0)?.id;
+  const nextId = samples.find((s) => !s.runs.some((r) => r.decision))?.id;   // first step without a recorded decision
   const groups = useMemo(() => {
     const g = new Map<string, Sample[]>();
     samples.forEach((s) => g.set(s.group, [...(g.get(s.group) ?? []), s]));
@@ -26,7 +29,10 @@ export default function Submit({ activeRunId }: { activeRunId: number | null }) 
   async function start(key: string, req: () => Promise<{ run_id: number }>) {
     setBusy(key); setError(null);
     try { go(`#/run/${(await req()).run_id}`); }
-    catch (e) { setError((e as Error).message); }
+    catch (e) {
+      if (e instanceof ApiError && e.status === 401) { setPasscode(""); setCode(""); setError("That passcode wasn't accepted."); }
+      else setError((e as Error).message);
+    }
     finally { setBusy(null); }
   }
 
@@ -39,8 +45,22 @@ export default function Submit({ activeRunId }: { activeRunId: number | null }) 
 
   return (
     <aside className="space-y-4">
+      {locked && (
+        <form className="card p-4" onSubmit={(e) => { e.preventDefault(); const v = draft.trim(); if (v) { setPasscode(v); setCode(v); setError(null); } }}>
+          <p className="label">Reviewer passcode</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Each run calls Claude, so running invoices needs the passcode that came with this link. Reading runs and history doesn't.
+          </p>
+          <div className="mt-2 flex gap-2">
+            <input type="password" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Passcode" autoComplete="off"
+                   className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-transparent px-2 py-1.5 text-sm dark:border-slate-700" />
+            <button className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white dark:bg-white dark:text-slate-900">Unlock</button>
+          </div>
+        </form>
+      )}
       <div
-        className={`card cursor-pointer border-dashed p-5 text-center transition ${drag ? "border-slate-900 bg-slate-100 dark:border-white dark:bg-slate-800" : "hover:border-slate-400"}`}
+        aria-disabled={locked}
+        className={`card cursor-pointer border-dashed p-5 ${locked ? "pointer-events-none opacity-50" : ""} text-center transition ${drag ? "border-slate-900 bg-slate-100 dark:border-white dark:bg-slate-800" : "hover:border-slate-400"}`}
         onClick={() => input.current?.click()}
         onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
         onDragLeave={() => setDrag(false)}
@@ -81,7 +101,7 @@ export default function Submit({ activeRunId }: { activeRunId: number | null }) 
                   return (
                   <li key={s.id}>
                     <button
-                      disabled={!!busy}
+                      disabled={!!busy || locked}
                       onClick={() => start(s.id, () => api(`/api/runs/sample/${s.id}`, { method: "POST" }))}
                       className={`group flex w-full items-start justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-slate-100 disabled:opacity-60 dark:hover:bg-slate-800 ${s.id === nextId ? "ring-1 ring-slate-300 dark:ring-slate-600" : ""}`}
                     >
@@ -110,6 +130,11 @@ export default function Submit({ activeRunId }: { activeRunId: number | null }) 
         </div>
         <p className="mt-3 text-[11px] text-slate-400">Pills show the expected outcome when the steps are run in order from a fresh sandbox.</p>
       </div>
+      {health && health.model_calls.used >= health.model_calls.limit * 0.8 && (
+        <p className="px-1 text-[11px] text-amber-700 dark:text-amber-300">
+          Model calls today: {health.model_calls.used} of {health.model_calls.limit}. At the limit, new invoices can't be read until the 24-hour window frees up.
+        </p>
+      )}
       {activeRunId && <a href="#/" className="block text-center text-xs text-slate-500 hover:underline">Clear selection</a>}
     </aside>
   );

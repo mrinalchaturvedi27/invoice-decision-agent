@@ -50,7 +50,7 @@ export default function App() {
         </div>
       )}
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-        {route.page === "history" ? <History health={health} /> : <RunPage runId={route.runId} />}
+        {route.page === "history" ? <History health={health} /> : <RunPage runId={route.runId} health={health} />}
       </main>
       <footer className="mx-auto max-w-7xl px-4 pb-8 text-xs text-slate-400 sm:px-6">
         Policy {health?.policy_version ?? "…"} · extraction model {health?.extract_model ?? "…"} · decisions are made by deterministic rules; the model reads and explains.

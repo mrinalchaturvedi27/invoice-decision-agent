@@ -20,3 +20,8 @@ ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN")
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 MAX_SANDBOXES = int(os.environ.get("MAX_SANDBOXES", "500"))  # one SQLite file per reviewer browser
+
+# Bounding paid model usage on a shared link, without user accounts:
+# a passcode for anything that can start a model call (unset = open), and a server-wide daily cap.
+REVIEWER_PASSCODE = os.environ.get("REVIEWER_PASSCODE") or None
+MODEL_CALLS_PER_DAY = int(os.environ.get("MODEL_CALLS_PER_DAY", "300"))

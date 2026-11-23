@@ -29,14 +29,26 @@ export function inSandbox(path: string): string {
   return `${base}${base.includes("?") ? "&" : "?"}ws=${SANDBOX}${hash ? "#" + hash : ""}`;
 }
 
+// Reviewer passcode (only when the server sets one): sent with requests that can start a model call.
+const PASSCODE_KEY = "invoice-agent-passcode";
+let PASSCODE: string = (() => { try { return localStorage.getItem(PASSCODE_KEY) ?? ""; } catch { return ""; } })();
+export function passcode(): string { return PASSCODE; }
+export function setPasscode(v: string): void {
+  PASSCODE = v;
+  try { v ? localStorage.setItem(PASSCODE_KEY, v) : localStorage.removeItem(PASSCODE_KEY); } catch { /* page-load only */ }
+}
+
+export class ApiError extends Error { constructor(message: string, public status: number) { super(message); } }
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   headers.set("X-Workspace", SANDBOX);
+  if (PASSCODE) headers.set("X-Reviewer-Passcode", PASSCODE);
   const r = await fetch(path, { ...init, headers });
   if (!r.ok) {
     let detail = r.statusText;
     try { detail = (await r.json()).detail ?? detail; } catch { /* not json */ }
-    throw new Error(detail);
+    throw new ApiError(detail, r.status);
   }
   return r.json();
 }

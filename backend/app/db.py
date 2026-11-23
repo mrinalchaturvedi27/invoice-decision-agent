@@ -56,6 +56,8 @@ CREATE TABLE IF NOT EXISTS allocations(
   UNIQUE(invoice_id, po_line_id));
 CREATE TABLE IF NOT EXISTS extraction_cache(
   sha256 TEXT PRIMARY KEY, extraction TEXT NOT NULL, meta TEXT, created_at TEXT);
+CREATE TABLE IF NOT EXISTS model_calls(
+  id INTEGER PRIMARY KEY, kind TEXT NOT NULL, ts REAL NOT NULL);
 CREATE INDEX IF NOT EXISTS ix_steps_run ON run_steps(run_id, seq);
 CREATE INDEX IF NOT EXISTS ix_alloc_po ON allocations(po_id);
 """

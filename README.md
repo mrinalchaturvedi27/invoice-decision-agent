@@ -37,6 +37,7 @@ Tests use an isolated SQLite file per test. They replace Claude with `FixtureExt
 - two copies of one invoice racing to the ledger, giving one APPROVE and one HOLD linked to the winner;
 - a crash after posting, where the retry resumes from the recorded decision instead of re-deciding;
 - sandbox isolation and reset;
+- the reviewer passcode and the daily model-call cap, including cache hits being free;
 - the HTTP and SSE surface;
 - the full demo order (`test_demo_sequence.py`).
 
@@ -57,6 +58,16 @@ Tests use an isolated SQLite file per test. They replace Claude with `FixtureExt
 - **This is isolation, not access control.** There are no accounts, so anyone holding a sandbox ID can read that sandbox's runs and PDFs. The upload panel says this, so use synthetic invoices only. Confidential uploads would need real authentication in front of `/api/*`.
 - Requests that send no sandbox ID (curl, scripts) use the default database. Its reset needs `ADMIN_TOKEN`. The server caps sandboxes at `MAX_SANDBOXES` (500).
 
+## Paid model usage on a shared link
+Two limits, without user accounts:
+- **`REVIEWER_PASSCODE`.** Starting a run (upload, prepared scenario, retry) needs the passcode, because any run can call Claude. Reading runs, history and PDFs doesn't. Send the passcode along with the link. The page asks for it once and keeps it in localStorage. If it's unset, runs are open (local development).
+- **`MODEL_CALLS_PER_DAY`** (default 300). This is a server-wide cap on live Claude calls over a rolling 24 hours, across every sandbox. An extraction served from the cache doesn't count.
+  - At the cap, extraction refuses the call before anything is decided. The run fails with the reason, the ledger is untouched, and Retry works once the window frees up.
+  - A summary that hits the cap falls back to the sentence built from the rule trace.
+  - `/api/health` reports `model_calls: {used, limit}`, and the run panel warns at 80%.
+
+The cap is the backstop if the passcode leaks. It bounds spending to roughly 150 invoices a day (two calls each: extraction and summary).
+
 ## First keyed rehearsal
 ```bash
 export ANTHROPIC_API_KEY=...
@@ -71,7 +82,7 @@ For each generated sample, the script makes a live extraction call and compares 
 - `data/fresh/crestline-chairs-chrome.pdf` was handwritten in HTML and printed by Chrome, so it went through neither the generator nor reportlab. Uploaded, it was approved against PO-3102, taking the balance from $3,720.00 to $1,240.00, in 9.8 s.
 
 ## Deploy (Render)
-`render.yaml` defines a Docker web service. It mounts a 1 GB disk at `/data` for SQLite and uploads, which needs a paid instance. Set `ANTHROPIC_API_KEY` in the dashboard. `ADMIN_TOKEN` is generated automatically and protects **Reset demo ledger** on the public URL.
+`render.yaml` defines a Docker web service. It mounts a 1 GB disk at `/data` for SQLite and uploads, which needs a paid instance. Set `ANTHROPIC_API_KEY` and `REVIEWER_PASSCODE` in the dashboard. `ADMIN_TOKEN` is generated automatically and protects **Reset demo ledger** on the public URL.
 
 **Local container check (2026-11-23).** The image was run the way Render runs it: `PORT=10000`, an admin token, a volume mounted at `/data`, and a live key.
 - E1·A was approved, taking PO-1042 from $48,000 to $28,000.
@@ -90,3 +101,5 @@ For each generated sample, the script makes a live extraction call and compares 
 | `DATA_DIR` | `./data` | Location of the database and uploaded PDFs |
 | `ADMIN_TOKEN` | unset | When set, required to reset the default (non-sandbox) database |
 | `MAX_SANDBOXES` | `500` | Cap on per-browser sandbox databases |
+| `REVIEWER_PASSCODE` | unset | When set, required to start runs |
+| `MODEL_CALLS_PER_DAY` | `300` | Server-wide cap on live Claude calls, rolling 24 h |

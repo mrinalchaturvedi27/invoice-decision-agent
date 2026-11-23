@@ -4,6 +4,7 @@ import Extraction from "../components/Extraction";
 import Submit from "../components/Submit";
 import Timeline from "../components/Timeline";
 import { api, time, useRunStream } from "../lib";
+import type { Health } from "../types";
 
 function RunDetail({ runId }: { runId: number }) {
   const snap = useRunStream(runId);
@@ -50,10 +51,10 @@ function RunDetail({ runId }: { runId: number }) {
   );
 }
 
-export default function RunPage({ runId }: { runId: number | null }) {
+export default function RunPage({ runId, health }: { runId: number | null; health: Health | null }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
-      <div className={runId ? "order-2 lg:order-1" : ""}><Submit activeRunId={runId} /></div>
+      <div className={runId ? "order-2 lg:order-1" : ""}><Submit activeRunId={runId} health={health} /></div>
       {runId ? <div className="order-1 min-w-0 lg:order-2"><RunDetail key={runId} runId={runId} /></div> : (
         <div className="card grid min-h-80 place-items-center p-8 text-center">
           <div className="max-w-md">
