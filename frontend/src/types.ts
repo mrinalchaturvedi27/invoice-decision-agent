@@ -40,6 +40,7 @@ export interface Run {
   explanation_source: string | null;
   error: string | null;
   started_at: string;
+  decided_at: string | null;
   finished_at: string | null;
 }
 

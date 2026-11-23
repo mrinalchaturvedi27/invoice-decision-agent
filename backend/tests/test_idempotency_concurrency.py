@@ -44,7 +44,8 @@ def test_stale_snapshot_is_refused_by_ledger(runner):
         line_id = conn.execute("SELECT id FROM po_lines WHERE po_id='PO-1042'").fetchone()[0]
         res = ledger.commit_approval(conn, run_id=run_id, invoice_id=inv_id, po_id="PO-1042",
                                      allocations=[{"po_line_id": line_id, "qty": Decimal(560), "amount": Decimal("28000")}],
-                                     snapshot={"open_balance": Decimal("48000"), "open_qty": {str(line_id): Decimal(960)}})
+                                     snapshot={"open_balance": Decimal("48000"), "open_qty": {str(line_id): Decimal(960)}},
+                                     decision={"decision": "APPROVE"})
     finally:
         conn.close()
     assert res["status"] == "stale"

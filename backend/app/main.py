@@ -92,11 +92,14 @@ def retry_run(request: Request, run_id: int) -> Response:
     conn = db.connect()
     try:
         row = conn.execute("SELECT status FROM runs WHERE id = ?", (run_id,)).fetchone()
+        # Claim the run atomically so two retry clicks can't execute it twice at once.
+        claimed = row is not None and conn.execute(
+            "UPDATE runs SET status='queued' WHERE id = ? AND status = 'error'", (run_id,)).rowcount == 1
     finally:
         conn.close()
     if row is None:
         raise HTTPException(404, "Unknown run")
-    if row["status"] != "error":
+    if not claimed:
         raise HTTPException(409, "Only failed runs can be retried")
     threading.Thread(target=request.app.state.runner.execute, args=(run_id,), daemon=True).start()
     return J({"run_id": run_id}, 202)

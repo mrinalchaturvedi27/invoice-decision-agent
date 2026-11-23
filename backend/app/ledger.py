@@ -26,23 +26,58 @@ def open_state(conn: sqlite3.Connection, po_id: str) -> dict | None:
     return {"po": dict(po), "total": total, "allocated": allocated, "open_balance": total - allocated, "lines": lines}
 
 
+DECISION_FIELDS = ("decision", "deciding_rule", "deciding_message", "po_id", "po_method", "balance_before",
+                   "balance_after", "linked_invoice_id", "trace")
+
+
+def _write_decision(conn: sqlite3.Connection, run_id: int, fields: dict) -> None:
+    cols = [f for f in DECISION_FIELDS if f in fields]
+    vals = [db.dumps(fields[f]) if f == "trace" else (str(fields[f]) if isinstance(fields[f], Decimal) else fields[f])
+            for f in cols]
+    conn.execute(f"UPDATE runs SET {', '.join(c + '=?' for c in cols)}, decided_at=? WHERE id=?",
+                 (*vals, db.now(), run_id))
+
+
+def record_decision(conn: sqlite3.Connection, run_id: int, fields: dict) -> None:
+    """HOLD / REJECT: the ledger is untouched, so recording the verdict is a single atomic write."""
+    _write_decision(conn, run_id, fields)
+
+
 def commit_approval(conn: sqlite3.Connection, *, run_id: int, invoice_id: int, po_id: str,
-                    allocations: list[dict], snapshot: dict) -> dict:
-    """allocations: [{po_line_id, qty, amount}]. snapshot: {open_balance, open_qty: {line_id: qty}} seen when
-    the decision was made. Returns status applied | already_applied | stale | duplicate."""
+                    allocations: list[dict], snapshot: dict, decision: dict) -> dict:
+    """One BEGIN IMMEDIATE transaction that re-checks duplicates and the balance, posts the allocations, and
+    records the run's decision with its before/after balances, so a posting never exists without its verdict.
+
+    allocations: [{po_line_id, qty, amount}]. snapshot: {open_balance, open_qty: {line_id: qty}} seen when the
+    decision was made. decision: the run fields to record (balances are filled in here).
+    Returns status applied | already_applied | stale | duplicate | suspected_duplicate."""
+    from app.pipeline.duplicates import find_approved_match
+
     conn.execute("BEGIN IMMEDIATE")
     try:
-        inv = conn.execute("SELECT approved_run_id FROM invoices WHERE id = ?", (invoice_id,)).fetchone()
-        existing = conn.execute("SELECT amount FROM allocations WHERE invoice_id = ?", (invoice_id,)).fetchall()
+        inv = dict(conn.execute("SELECT * FROM invoices WHERE id = ?", (invoice_id,)).fetchone())
         if inv["approved_run_id"] and inv["approved_run_id"] != run_id:
             conn.execute("ROLLBACK")
             return {"status": "duplicate", "approved_run_id": inv["approved_run_id"]}
-        if existing:  # a retry of the run that already committed: idempotent
+        existing = conn.execute("SELECT amount FROM allocations WHERE invoice_id = ?", (invoice_id,)).fetchall()
+        if existing:  # this run already posted (pre-dates recorded decisions): idempotent
             st = open_state(conn, po_id)
-            conn.execute("COMMIT")
             used = sum((D(r["amount"]) for r in existing), Decimal(0))
-            return {"status": "already_applied", "balance_before": st["open_balance"] + used,
-                    "balance_after": st["open_balance"]}
+            result = {"status": "already_applied", "balance_before": st["open_balance"] + used,
+                      "balance_after": st["open_balance"]}
+            _write_decision(conn, run_id, {**decision, "balance_before": result["balance_before"],
+                                           "balance_after": result["balance_after"]})
+            conn.execute("COMMIT")
+            return result
+        # Business duplicate approved by another run after this run's duplicate stage looked.
+        match = find_approved_match(conn, inv)
+        if match:
+            st = open_state(conn, po_id)
+            conn.execute("ROLLBACK")
+            o, reasons = match
+            return {"status": "suspected_duplicate", "original": {k: o[k] for k in ("id", "invoice_number",
+                                                                                   "approved_run_id")},
+                    "reasons": reasons, "open_balance": st["open_balance"]}
 
         st = open_state(conn, po_id)
         claimed = sum((a["amount"] for a in allocations), Decimal(0))
@@ -58,9 +93,12 @@ def commit_approval(conn: sqlite3.Connection, *, run_id: int, invoice_id: int, p
                          "VALUES (?,?,?,?,?,?,?)",
                          (run_id, invoice_id, po_id, a["po_line_id"], str(a["qty"]), str(a["amount"]), ts))
         conn.execute("UPDATE invoices SET approved_run_id = ? WHERE id = ?", (run_id, invoice_id))
+        result = {"status": "applied", "balance_before": st["open_balance"],
+                  "balance_after": st["open_balance"] - claimed}
+        _write_decision(conn, run_id, {**decision, "balance_before": result["balance_before"],
+                                       "balance_after": result["balance_after"]})
         conn.execute("COMMIT")
-        return {"status": "applied", "balance_before": st["open_balance"],
-                "balance_after": st["open_balance"] - claimed}
+        return result
     except Exception:
         conn.execute("ROLLBACK")
         raise

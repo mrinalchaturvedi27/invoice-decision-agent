@@ -8,7 +8,7 @@ export default function DecisionPanel({ snap }: { snap: Snapshot }) {
   const poStep = snap.steps.filter((s) => s.stage === "po").at(-1);
   const inference = poStep?.detail?.method === "inferred" ? poStep.detail : null;
 
-  if (run.status === "error") {
+  if (run.status === "error" && !run.decision) {
     return (
       <div className="card border-rose-300 p-5 dark:border-rose-500/40">
         <p className="label text-rose-600">Run failed — no decision made</p>
@@ -40,10 +40,26 @@ export default function DecisionPanel({ snap }: { snap: Snapshot }) {
           <span className="text-lg font-semibold">{style.word}</span>
           {run.deciding_rule && <code className="rounded bg-white/70 px-1.5 py-0.5 font-mono text-xs dark:bg-black/30">{run.deciding_rule}</code>}
         </div>
-        <p className="mt-3 text-sm leading-relaxed">{run.explanation}</p>
-        <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
-          {run.explanation_source === "claude" ? "Summary written by Claude from the rule trace" : "Summary built from the rule trace"} · decision by policy {run.policy_version}
-        </p>
+        {run.deciding_message && run.decision !== "APPROVE" && !run.explanation && (
+          <p className="mt-3 text-sm leading-relaxed">{run.deciding_message}</p>
+        )}
+        {run.explanation ? (
+          <>
+            <p className="mt-3 text-sm leading-relaxed">{run.explanation}</p>
+            <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+              {run.explanation_source === "claude" ? "Summary written by Claude from the rule trace" : "Summary built from the rule trace"} · decision by policy {run.policy_version}
+            </p>
+          </>
+        ) : run.status === "error" ? (
+          <p className="mt-3 text-xs text-rose-700 dark:text-rose-300">
+            The decision {run.decision === "APPROVE" ? "and its ledger posting were" : "was"} recorded before the run failed. Retrying only writes the summary; it won't re-decide.
+          </p>
+        ) : (
+          <p className="mt-3 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+            Decision recorded{run.decision === "APPROVE" ? " and posted" : ""} · writing the summary…
+          </p>
+        )}
       </section>
 
       <section className="card p-5">

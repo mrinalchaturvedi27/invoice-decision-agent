@@ -3,6 +3,10 @@
 A *run* is one processing attempt; an *invoice* is one document (keyed by sha256). Re-executing a
 run (a retry) reuses the same run and invoice, so it can neither flag itself as a duplicate nor
 allocate twice.
+
+The verdict is recorded at the decide stage: for an APPROVE in the same transaction as the ledger
+posting, for HOLD/REJECT in one write. From then on it is final. A retry of a decided run resumes at
+the explanation instead of re-deciding against a ledger that already contains its own posting.
 """
 from __future__ import annotations
 
@@ -14,14 +18,14 @@ from pathlib import Path
 from typing import Callable
 
 from app import db, ledger
-from app.money import fmt, s
+from app.money import D, fmt, s
 from app.pipeline.checks import run_checks
 from app.pipeline.consumption import check_consumption
 from app.pipeline.duplicates import check_duplicates, normalise_number
 from app.pipeline.explain import template_explanation
 from app.pipeline.ingest import inspect_pdf
 from app.pipeline.po_resolve import resolve_po
-from app.pipeline.rules import skipped
+from app.pipeline.rules import hold, reject, skipped
 from app.pipeline.vendor import check_vendor
 from app.policy import POLICY_VERSION
 
@@ -50,8 +54,8 @@ class _Step:
 
 
 class _Recorder:
-    def __init__(self, conn, run_id: int, pacing_ms: int):
-        self.conn, self.run_id, self.pacing, self.seq = conn, run_id, pacing_ms / 1000, 0
+    def __init__(self, conn, run_id: int, pacing_ms: int, seq: int = 0):
+        self.conn, self.run_id, self.pacing, self.seq = conn, run_id, pacing_ms / 1000, seq
 
     @contextmanager
     def step(self, stage: str, pace: bool = True):
@@ -131,6 +135,13 @@ class Runner:
     def _execute(self, conn, run_id: int) -> None:
         run = conn.execute("SELECT * FROM runs WHERE id = ?", (run_id,)).fetchone()
         invoice_id = run["invoice_id"]
+        if run["decided_at"]:  # verdict already recorded (and posted, if APPROVE): only the summary is left
+            conn.execute("DELETE FROM run_steps WHERE run_id = ? AND stage = 'explain'", (run_id,))
+            conn.execute("UPDATE runs SET status='running', attempts=attempts+1, error=NULL, finished_at=NULL "
+                         "WHERE id=?", (run_id,))
+            seq = conn.execute("SELECT COALESCE(MAX(seq), 0) FROM run_steps WHERE run_id = ?", (run_id,)).fetchone()[0]
+            self._explain_and_finish(conn, run_id, _Recorder(conn, run_id, self.pacing_ms, seq), resumed=True)
+            return
         conn.execute("DELETE FROM run_steps WHERE run_id = ?", (run_id,))
         conn.execute("UPDATE runs SET status='running', attempts=attempts+1, error=NULL, decision=NULL, "
                      "deciding_rule=NULL, deciding_message=NULL, finished_at=NULL WHERE id=?", (run_id,))
@@ -196,19 +207,45 @@ class Runner:
             before = cons["balance_before"] if cons else None
             after = before
 
+            fields = {"decision": decision, "deciding_rule": rule, "deciding_message": message, "po_id": po_id,
+                      "po_method": resolution["method"] if resolution else None,
+                      "linked_invoice_id": linked_invoice_id, "trace": trace}
+
             with rec.step("decide") as st:
                 if decision == "APPROVE":
                     result = ledger.commit_approval(conn, run_id=run_id, invoice_id=invoice_id, po_id=po_id,
-                                                    allocations=cons["allocations"], snapshot=cons["snapshot"])
+                                                    allocations=cons["allocations"], snapshot=cons["snapshot"],
+                                                    decision=fields)
                     if result["status"] == "stale":
                         st.done(f"Ledger changed while deciding (open balance now "
                                 f"{fmt(result['open_balance'])}) — re-evaluating against fresh state",
                                 {"ledger": result, "attempt": attempt}, "info")
                         continue
-                    if result["status"] == "duplicate":
-                        decision, rule = "REJECT", "DUPLICATE_OF_APPROVED"
-                        message = f"This invoice was approved by run #{result['approved_run_id']} while this run was deciding"
-                        st.done(f"REJECT — {message}", {"ledger": result}, "fail")
+                    if result["status"] in ("duplicate", "suspected_duplicate"):
+                        # Another run approved this document, or one it duplicates, after our duplicate stage ran.
+                        # The posting transaction refused; record the verdict the duplicate stage would now give.
+                        if result["status"] == "duplicate":
+                            r = reject("DUPLICATE_OF_APPROVED", "decide",
+                                       f"This exact file was approved by run #{result['approved_run_id']} while "
+                                       f"this run was deciding", original_run_id=result["approved_run_id"])
+                            linked = invoice_id
+                        else:
+                            o = result["original"]
+                            r = hold("SUSPECTED_DUPLICATE", "decide",
+                                     "Possible duplicate: " + "; ".join(result["reasons"]) +
+                                     f" (approved by run #{o['approved_run_id']} while this run was deciding)",
+                                     original_invoice_id=o["id"], original_run_id=o["approved_run_id"],
+                                     original_number=o["invoice_number"])
+                            linked = o["id"]
+                            before = result["open_balance"]
+                        after = before
+                        trace = trace + [r]
+                        fields.update(decision=r["outcome"], deciding_rule=r["rule"], deciding_message=r["message"],
+                                      linked_invoice_id=linked, trace=trace, balance_before=before,
+                                      balance_after=after)
+                        ledger.record_decision(conn, run_id, fields)
+                        st.done(f"{r['outcome']} — {r['rule']}: {r['message']}",
+                                {"decision": r["outcome"], "deciding_rule": r["rule"], "ledger": result}, "fail")
                     else:
                         before, after = result["balance_before"], result["balance_after"]
                         st.done(f"APPROVE — {fmt(cons['subtotal'])} allocated to {po_id}: "
@@ -217,6 +254,7 @@ class Runner:
                                 {"decision": decision, "ledger": result, "allocations": cons["allocations"],
                                  "attempt": attempt})
                 else:
+                    ledger.record_decision(conn, run_id, {**fields, "balance_before": before, "balance_after": after})
                     st.done(f"{decision} — {rule}: {message}",
                             {"decision": decision, "deciding_rule": rule,
                              "failing_rules": [r["rule"] for r in trace if r["ok"] is False],
@@ -225,27 +263,39 @@ class Runner:
         else:
             raise RuntimeError("Ledger kept changing during decision; run left undecided")
 
-        ctx = {"decision": decision, "deciding_rule": rule, "deciding_message": message.rstrip("."),
-               "po_id": po_id, "balance_before": before, "balance_after": after,
-               "subtotal": cons["subtotal"] if cons else None, "vendor": vendor["name"] if vendor else None,
-               "invoice_number": ext.get("invoice_number"), "policy_version": POLICY_VERSION,
-               "other_failing_rules": [r["message"] for r in trace if r["ok"] is False][1:]}
+        self._explain_and_finish(conn, run_id, rec)
+
+    # ---- after the verdict ------------------------------------------------------------------
+    def _explain_and_finish(self, conn, run_id: int, rec: _Recorder, resumed: bool = False) -> None:
+        ctx = explain_context(conn, run_id)
+        note = " (resumed from the recorded decision)" if resumed else ""
         with rec.step("explain", pace=False) as st:
             if self.explainer is None:
                 explanation, source = template_explanation(ctx), "template"
-                st.done("Built from the rule trace (model explanation disabled)", {"source": source})
+                st.done("Built from the rule trace (model explanation disabled)" + note, {"source": source})
             else:
                 try:
                     explanation, source = self.explainer(ctx), "claude"
-                    st.done("Written by Claude from the rule trace", {"source": source})
+                    st.done("Written by Claude from the rule trace" + note, {"source": source})
                 except Exception as e:
                     explanation, source = template_explanation(ctx), "template"
-                    st.done(f"Model unavailable ({type(e).__name__}) — used a sentence built from the rule trace",
-                            {"source": source, "error": str(e)}, "info")
+                    st.done(f"Model unavailable ({type(e).__name__}) — used a sentence built from the rule trace"
+                            + note, {"source": source, "error": str(e)}, "info")
+        conn.execute("UPDATE runs SET status='done', explanation=?, explanation_source=?, finished_at=? WHERE id=?",
+                     (explanation, source, db.now(), run_id))
 
-        conn.execute(
-            "UPDATE runs SET status='done', decision=?, deciding_rule=?, deciding_message=?, po_id=?, po_method=?, "
-            "balance_before=?, balance_after=?, linked_invoice_id=?, trace=?, explanation=?, explanation_source=?, "
-            "finished_at=? WHERE id=?",
-            (decision, rule, message, po_id, resolution["method"] if resolution else None, s(before), s(after),
-             linked_invoice_id, db.dumps(trace), explanation, source, db.now(), run_id))
+
+def explain_context(conn, run_id: int) -> dict:
+    """Everything the summary needs, read back from the recorded decision (so a resumed run says the same)."""
+    run = dict(conn.execute("SELECT * FROM runs WHERE id = ?", (run_id,)).fetchone())
+    inv = conn.execute("SELECT * FROM invoices WHERE id = ?", (run["invoice_id"],)).fetchone()
+    vendor = conn.execute("SELECT name FROM vendors WHERE id = ?", (inv["vendor_id"],)).fetchone() \
+        if inv["vendor_id"] else None
+    trace = json.loads(run["trace"] or "[]")
+    return {"decision": run["decision"], "deciding_rule": run["deciding_rule"],
+            "deciding_message": (run["deciding_message"] or "").rstrip("."), "po_id": run["po_id"],
+            "balance_before": D(run["balance_before"]), "balance_after": D(run["balance_after"]),
+            "subtotal": D(inv["subtotal"]) if run["po_id"] else None, "vendor": vendor["name"] if vendor else None,
+            "invoice_number": inv["invoice_number"], "policy_version": run["policy_version"],
+            "other_failing_rules": [r["message"] for r in trace if r["ok"] is False
+                                    and r["rule"] != run["deciding_rule"]]}

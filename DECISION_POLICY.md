@@ -44,13 +44,15 @@ All comparisons are **pre-tax**. An invoice must pass **every** check below. For
 - **Exhausted PO:** open balance = 0 → HOLD `PO_EXHAUSTED`. No further charges of any size.
 - **Tax:** tax ÷ subtotal must be within ±0.5 percentage points of the vendor's expected rate (else HOLD `TAX_RATE`).
 - **Bank details:** the invoice's bank last-4 ≠ the vendor master → HOLD `BANK_CHANGED`.
-- **Persistence:** an approval is written in one `BEGIN IMMEDIATE` transaction.
-  - The transaction re-reads the open balance and quantities, writes the line allocations, and records before/after balances.
-  - If state changed since the decision was computed, it re-decides on fresh state.
+- **Persistence:** an approval is written in one `BEGIN IMMEDIATE` transaction. Inside it, the ledger:
+  - re-checks duplicates: the byte-identical file and the §4 business-duplicate rules, against invoices approved since the duplicate stage looked. Two copies of one invoice racing each other give one APPROVE and one HOLD `SUSPECTED_DUPLICATE` linked to the winner;
+  - re-reads the open balance and quantities. If they changed since the decision was computed, it re-decides on fresh state;
+  - writes the line allocations **and the run's decision with its before/after balances**. A posting never exists without its recorded verdict.
 
 ## 4. Runs, invoices, retries, duplicates
 - A **run** is one processing attempt. An **invoice** is one document, keyed by its SHA-256.
 - Retrying a step inside a run reuses that run and invoice. The duplicate check always excludes the invoice's own record.
+- **A recorded decision is final.** HOLD and REJECT are recorded in one write at the decide stage, before the summary is written, and APPROVE is recorded in the posting transaction. A retry of a decided run resumes at the explanation and never re-decides. The run detail shows the verdict while the summary is being written.
 - **REJECT `DUPLICATE_OF_APPROVED`:** the byte-identical file of an invoice that was already approved.
 - **HOLD `SUSPECTED_DUPLICATE`**, linked to the earlier invoice:
   - same vendor and the same normalised invoice number, or

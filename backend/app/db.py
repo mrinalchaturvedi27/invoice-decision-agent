@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS runs(
   decision TEXT, deciding_rule TEXT, deciding_message TEXT, policy_version TEXT,
   po_id TEXT, po_method TEXT, balance_before TEXT, balance_after TEXT, linked_invoice_id INTEGER,
   extraction_cached INTEGER, trace TEXT, explanation TEXT, explanation_source TEXT, error TEXT,
-  started_at TEXT, finished_at TEXT);
+  started_at TEXT, decided_at TEXT, finished_at TEXT);
 CREATE TABLE IF NOT EXISTS run_steps(
   id INTEGER PRIMARY KEY, run_id INTEGER NOT NULL, seq INTEGER NOT NULL, stage TEXT NOT NULL,
   status TEXT NOT NULL, summary TEXT, detail TEXT, started_at TEXT, finished_at TEXT, duration_ms INTEGER);
@@ -75,8 +75,14 @@ def dumps(obj) -> str:
 
 
 def init() -> None:
-    with connect() as conn:
+    conn = connect()
+    try:
         conn.executescript(SCHEMA)
+        cols = {r["name"] for r in conn.execute("PRAGMA table_info(runs)")}
+        if "decided_at" not in cols:  # databases created before decisions were recorded with the posting
+            conn.execute("ALTER TABLE runs ADD COLUMN decided_at TEXT")
+    finally:
+        conn.close()
 
 
 def _load_seed(conn: sqlite3.Connection) -> None:
