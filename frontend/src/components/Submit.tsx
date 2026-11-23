@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api, ApiError, DecisionPill, go, passcode, setPasscode } from "../lib";
+import { api, DecisionPill, go } from "../lib";
 import type { Health, Sample } from "../types";
 
 /** Short step tag: the group's code plus the step's position, e.g. E1·A, E2·C; a lone step keeps its id (X1). */
@@ -10,9 +10,6 @@ function tag(group: string, items: Sample[], i: number): string {
 }
 
 export default function Submit({ activeRunId, health }: { activeRunId: number | null; health: Health | null }) {
-  const [code, setCode] = useState(passcode());
-  const [draft, setDraft] = useState("");
-  const locked = !!health?.passcode_required && !code;
   const [samples, setSamples] = useState<Sample[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,10 +33,7 @@ export default function Submit({ activeRunId, health }: { activeRunId: number | 
   async function start(key: string, req: () => Promise<{ run_id: number }>) {
     setBusy(key); setError(null);
     try { go(`#/run/${(await req()).run_id}`); }
-    catch (e) {
-      if (e instanceof ApiError && e.status === 401) { setPasscode(""); setCode(""); setError("That passcode wasn't accepted."); }
-      else setError((e as Error).message);
-    }
+    catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
   }
 
@@ -52,23 +46,9 @@ export default function Submit({ activeRunId, health }: { activeRunId: number | 
 
   return (
     <aside className="space-y-4 lg:sticky lg:top-[126px] lg:max-h-[calc(100vh-142px)] lg:overflow-y-auto lg:pr-1">
-      {locked && (
-        <form className="card border-ink/70 p-4" onSubmit={(e) => { e.preventDefault(); const v = draft.trim(); if (v) { setPasscode(v); setCode(v); setError(null); } }}>
-          <p className="label">Reviewer passcode</p>
-          <p className="mt-1.5 text-[12.5px] leading-snug text-muted">
-            Each run calls Claude, so starting one needs the passcode that came with this link. Reading runs and history doesn't.
-          </p>
-          <div className="mt-3 flex gap-2">
-            <input type="password" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Passcode" autoComplete="off"
-                   className="min-w-0 flex-1 rounded-md border border-line-strong bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-ink" />
-            <button className="rounded-md bg-ink px-3.5 py-1.5 text-xs font-semibold text-paper">Unlock</button>
-          </div>
-        </form>
-      )}
-
       <div
-        role="button" tabIndex={locked ? -1 : 0} aria-disabled={locked}
-        className={`group rounded-[10px] border-[1.5px] border-dashed px-5 py-6 text-center transition ${locked ? "pointer-events-none opacity-45" : "cursor-pointer"}
+        role="button" tabIndex={0}
+        className={`group rounded-[10px] border-[1.5px] border-dashed px-5 py-6 text-center transition cursor-pointer
           ${drag ? "border-accent bg-approve-bg" : "border-line-strong bg-surface hover:border-ink/60"}`}
         onClick={() => input.current?.click()}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") input.current?.click(); }}
@@ -113,7 +93,7 @@ export default function Submit({ activeRunId, health }: { activeRunId: number | 
                   return (
                     <li key={s.id} className={`rounded-md ${isNext ? "bg-sunken ring-1 ring-line-strong" : ""}`}>
                       <button
-                        disabled={!!busy || locked}
+                        disabled={!!busy}
                         onClick={() => start(s.id, () => api(`/api/runs/sample/${s.id}`, { method: "POST" }))}
                         title={`Expected: ${s.expected_decision}${s.expected_rule ? " · " + s.expected_rule : ""}`}
                         className="group grid w-full grid-cols-[44px_minmax(0,1fr)_auto] items-start gap-2 rounded-md px-2 py-2 text-left hover:bg-sunken disabled:cursor-not-allowed disabled:opacity-55"

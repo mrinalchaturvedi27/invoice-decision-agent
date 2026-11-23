@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import hmac
 import json
 import logging
 import os
@@ -50,13 +49,6 @@ def sandbox(x_workspace: str | None = Header(default=None), ws: str | None = Non
         raise HTTPException(503, "Too many sandboxes on this server; ask the admin to clear old ones")
 
 
-def reviewer(x_reviewer_passcode: str | None = Header(default=None)) -> None:
-    """Starting a run can cost a model call, so it needs the reviewer passcode when one is configured."""
-    if config.REVIEWER_PASSCODE and not hmac.compare_digest(
-            (x_reviewer_passcode or "").encode(), config.REVIEWER_PASSCODE.encode()):
-        raise HTTPException(401, "Reviewer passcode required to run invoices")
-
-
 def J(obj, status: int = 200) -> Response:
     return Response(content=db.dumps(obj), media_type="application/json", status_code=status)
 
@@ -101,7 +93,7 @@ def health(sb: Path = Depends(sandbox)) -> Response:
     return J({"status": "ok", "policy_version": POLICY_VERSION, "extract_model": config.EXTRACT_MODEL,
               "model_credentials": bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")),
               "stages": STAGES, "sandbox": sb != db.default_path(),
-              "passcode_required": bool(config.REVIEWER_PASSCODE), "model_calls": budget.usage(),
+              "model_calls": budget.usage(),
               "reset_requires_token": bool(config.ADMIN_TOKEN) and sb == db.default_path()})
 
 
@@ -144,19 +136,19 @@ def sample_pdf(sample_id: str):
     return FileResponse(config.SAMPLES_DIR / m["file"], media_type="application/pdf", filename=m["file"])
 
 
-@app.post("/api/runs", dependencies=[Depends(reviewer)])
+@app.post("/api/runs")
 async def create_run(request: Request, file: UploadFile = File(...), sb: Path = Depends(sandbox)) -> Response:
     data = await file.read()
     return _start(request, sb, data, Path(file.filename or "upload.pdf").name)
 
 
-@app.post("/api/runs/sample/{sample_id}", dependencies=[Depends(reviewer)])
+@app.post("/api/runs/sample/{sample_id}")
 def create_sample_run(request: Request, sample_id: str, sb: Path = Depends(sandbox)) -> Response:
     m = _sample(sample_id)
     return _start(request, sb, (config.SAMPLES_DIR / m["file"]).read_bytes(), m["file"])
 
 
-@app.post("/api/runs/{run_id}/retry", dependencies=[Depends(reviewer)])
+@app.post("/api/runs/{run_id}/retry")
 def retry_run(request: Request, run_id: int, sb: Path = Depends(sandbox)) -> Response:
     conn = db.connect(sb)
     try:

@@ -81,4 +81,4 @@ export interface HistoryRow {
 export interface Stats { runs: number; APPROVE: number; HOLD: number; REJECT: number; error: number; running: number; approved_amount: number }
 
 export interface Health { status: string; policy_version: string; extract_model: string; model_credentials: boolean; stages: string[]; sandbox: boolean; reset_requires_token: boolean;
-  passcode_required: boolean; model_calls: { used: number; limit: number } }
+  model_calls: { used: number; limit: number } }

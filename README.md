@@ -1,6 +1,6 @@
 # Invoice Decision Agent
 
-[Open the live demo](https://invoice-decision-agent-ok4z.onrender.com/). Use the reviewer passcode to start a run.
+[Open the live demo](https://invoice-decision-agent-ok4z.onrender.com/).
 
 A Zamp AI Solutions Analyst case study for PS-1. Upload an invoice PDF and get an **Approve**, **Hold**, or **Reject** decision against seeded vendor and purchase order (PO) records in INR. The app streams each check as it runs and keeps the PDF, rule trace, and PO balance in History. Held and rejected invoices include a next step for accounts payable (AP).
 
@@ -47,6 +47,6 @@ The INR demo uses a fresh SQLite ledger at `data/inr/app.db`. Previous USD demo 
 
 ## Deploy on Render
 
-[render.yaml](render.yaml) defines a free Docker service. SQLite and uploads use ephemeral storage at `/data`. Set `ANTHROPIC_API_KEY` and `REVIEWER_PASSCODE` in Render. Share the passcode with reviewers so they can start runs. `MODEL_CALLS_PER_DAY` caps live Claude calls across all sandboxes and defaults to 300 per rolling 24 hours.
+[render.yaml](render.yaml) defines a free Docker service. SQLite and uploads use ephemeral storage at `/data`. Set `ANTHROPIC_API_KEY` in Render. Anyone with the link can start runs; `MODEL_CALLS_PER_DAY` caps live Claude calls across all sandboxes and defaults to 300 per rolling 24 hours.
 
 Use synthetic invoices on the hosted demo. Anyone with a sandbox ID can read its runs and PDFs.
