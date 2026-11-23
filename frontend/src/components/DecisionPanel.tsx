@@ -60,6 +60,12 @@ export default function DecisionPanel({ snap }: { snap: Snapshot }) {
             Decision recorded{run.decision === "APPROVE" ? " and posted" : ""} · writing the summary…
           </p>
         )}
+        {snap.next_step && (
+          <div className="mt-4 rounded-lg border border-black/10 bg-white/80 px-3 py-2.5 dark:border-white/10 dark:bg-black/30">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Next step for AP</p>
+            <p className="mt-0.5 text-sm font-medium">{snap.next_step}</p>
+          </div>
+        )}
       </section>
 
       <section className="card p-5">

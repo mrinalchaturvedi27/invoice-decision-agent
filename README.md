@@ -36,6 +36,8 @@ Tests use an isolated SQLite file per test. They replace Claude with `FixtureExt
 - retry idempotency, and parallel approvals that must not overspend a PO;
 - two copies of one invoice racing to the ledger, giving one APPROVE and one HOLD linked to the winner;
 - a crash after posting, where the retry resumes from the recorded decision instead of re-deciding;
+- exact-SKU line matching, and holding a description-only tie (two "Air filter" lines);
+- a rule-based next step for every HOLD and REJECT rule;
 - sandbox isolation and reset;
 - the reviewer passcode and the daily model-call cap, including cache hits being free;
 - the HTTP and SSE surface;

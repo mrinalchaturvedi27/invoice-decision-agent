@@ -27,7 +27,11 @@ Outcomes:
 - It must belong to the invoicing vendor (else HOLD `PO_VENDOR_MISMATCH`, a fraud flag).
 - The currency must match.
 - The status must be `open`.
-- Every invoice line must map to a PO line by SKU or description (else HOLD `LINE_UNMAPPED`, which also covers bundled lines).
+- Every invoice line must map to exactly one PO line:
+  - An **exact SKU match decides**, even when another PO line has the same description (two "Air filter" lines, FILT-A and FILT-B).
+  - Without a SKU match, the description must reach a similarity of 0.80.
+  - If another PO line scores within 0.05 of the best, the line is ambiguous: HOLD `LINE_AMBIGUOUS`, listing the candidate PO lines. It is never guessed, because a guess would consume the wrong line's quantity.
+  - No match → HOLD `LINE_UNMAPPED`, which also covers bundled lines.
 
 **No reference:**
 - Score each open PO for the vendor (amount fit, line similarity).
@@ -65,3 +69,9 @@ All comparisons are **pre-tax**. An invoice must pass **every** check below. For
 4. Consumption
 
 The first failing rule becomes the **deciding rule** shown to the reviewer. All other rule results are still recorded in the trace.
+
+## Next step for the reviewer
+Every HOLD and REJECT carries one instruction for AP, chosen by the deciding rule from the data recorded with it (`backend/app/pipeline/next_steps.py`). It is as reproducible as the decision; the model's summary does not write it. For example:
+- `EXCEEDS_OPEN_BALANCE`: "Request a corrected invoice or an approved PO amendment."
+- `PO_AMBIGUOUS`: "Confirm whether this invoice belongs to PO-3103 or PO-3104." It names only the POs within the required lead of the best fit.
+- `SUSPECTED_DUPLICATE`: compare with the named approved invoice and its run.

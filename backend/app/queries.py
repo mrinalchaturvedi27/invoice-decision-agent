@@ -5,6 +5,7 @@ import json
 import sqlite3
 
 from app import ledger
+from app.pipeline.next_steps import next_step
 
 
 def run_snapshot(conn: sqlite3.Connection, run_id: int) -> dict | None:
@@ -48,7 +49,7 @@ def run_snapshot(conn: sqlite3.Connection, run_id: int) -> dict | None:
         "SELECT id, decision, deciding_rule, started_at FROM runs WHERE invoice_id = ? AND id != ? ORDER BY id",
         (run["invoice_id"], run_id))]
     return {"run": run, "steps": steps, "invoice": inv, "vendor": vendor, "po": po, "linked": linked,
-            "other_runs_of_invoice": other_runs}
+            "other_runs_of_invoice": other_runs, "next_step": next_step(run, run["trace"])}
 
 
 def list_runs(conn: sqlite3.Connection, decision: str | None = None) -> list[dict]:

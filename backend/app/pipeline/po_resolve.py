@@ -14,7 +14,7 @@ from rapidfuzz import fuzz
 from app import ledger
 from app.money import D, fmt
 from app.pipeline.rules import hold, ok
-from app.policy import PO_INFER_MIN_LEAD, PO_INFER_MIN_SCORE
+from app.policy import LINE_MATCH_MIN_SIMILARITY, LINE_TIE_MARGIN, PO_INFER_MIN_LEAD, PO_INFER_MIN_SCORE
 
 STAGE = "po"
 
@@ -29,19 +29,68 @@ def _desc_sim(li: dict, pl: dict) -> float:
     return fuzz.token_set_ratio(li.get("description") or "", pl["description"] or "") / 100
 
 
+def _line_ref(pl: dict) -> dict:
+    return {"po_line_id": pl["id"], "line_no": pl["line_no"], "sku": pl["sku"], "description": pl["description"]}
+
+
 def map_lines(ext_lines: list[dict], po_lines: dict) -> list[dict]:
-    """Map each invoice line to its PO line by SKU, else by description similarity ≥ 0.80."""
+    """Map each invoice line to one PO line.
+
+    1. An exact SKU match on exactly one PO line decides, whatever the descriptions say.
+    2. Otherwise match by description: the best line must reach LINE_MATCH_MIN_SIMILARITY, and if another line
+       scores within LINE_TIE_MARGIN of it the line is *ambiguous*. Ambiguous lines are held, never guessed:
+       picking the first of two "Air filter" lines would consume the wrong line's quantity.
+    method: "sku" | "description" | "ambiguous" | None (no match)."""
     out = []
     for i, li in enumerate(ext_lines):
-        best, best_sim = None, 0.0
-        for pl in po_lines.values():
-            sim = _desc_sim(li, pl)
-            if sim > best_sim:
-                best, best_sim = pl, sim
-        out.append({"invoice_line": i, "po_line_id": best["id"] if best and best_sim >= 0.8 else None,
-                    "po_line_no": best["line_no"] if best and best_sim >= 0.8 else None,
-                    "similarity": round(best_sim, 2)})
+        entry = {"invoice_line": i, "po_line_id": None, "po_line_no": None, "similarity": 0.0, "method": None}
+        sku = _alnum(li.get("sku"))
+        by_sku = [pl for pl in po_lines.values() if sku and _alnum(pl["sku"]) == sku]
+        if len(by_sku) == 1:
+            pl = by_sku[0]
+            entry.update(po_line_id=pl["id"], po_line_no=pl["line_no"], similarity=1.0, method="sku")
+            out.append(entry)
+            continue
+        pool = by_sku or list(po_lines.values())   # same SKU on several PO lines: tell them apart by description
+        scored = sorted(((fuzz.token_set_ratio(li.get("description") or "", pl["description"] or "") / 100, pl)
+                         for pl in pool), key=lambda t: (-t[0], t[1]["line_no"]))
+        if scored:
+            best_sim, best = scored[0]
+            entry["similarity"] = round(best_sim, 2)
+            if best_sim >= LINE_MATCH_MIN_SIMILARITY:
+                ties = [(sim, pl) for sim, pl in scored
+                        if sim >= LINE_MATCH_MIN_SIMILARITY and best_sim - sim <= LINE_TIE_MARGIN]
+                if len(ties) > 1:
+                    entry.update(method="ambiguous",
+                                 candidates=[{**_line_ref(pl), "similarity": round(sim, 2)} for sim, pl in ties])
+                else:
+                    entry.update(po_line_id=best["id"], po_line_no=best["line_no"], method="description")
+        out.append(entry)
     return out
+
+
+def _line_rules(mapping: list[dict], ext_lines: list[dict], po_id: str) -> list[dict]:
+    rules = []
+    ambiguous = [m for m in mapping if m["method"] == "ambiguous"]
+    if ambiguous:
+        parts = []
+        for m in ambiguous:
+            li = ext_lines[m["invoice_line"]]
+            what = f"'{li.get('description') or '?'}'" + (f", SKU {li['sku']}" if li.get("sku") else ", no SKU")
+            opts = " and ".join(f"line {c['line_no']} ({c['sku'] or c['description']})" for c in m["candidates"])
+            parts.append(f"invoice line {m['invoice_line'] + 1} ({what}) matches {po_id} {opts} equally")
+        rules.append(hold("LINE_AMBIGUOUS", STAGE, "Can't tell which PO line is billed: " + "; ".join(parts),
+                          lines=[{"invoice_line": m["invoice_line"] + 1, "candidates": m["candidates"]}
+                                 for m in ambiguous]))
+    unmapped = [m["invoice_line"] + 1 for m in mapping if m["method"] is None]
+    if unmapped:
+        rules.append(hold("LINE_UNMAPPED", STAGE, f"Invoice line(s) {unmapped} match no line on {po_id}",
+                          lines=unmapped))
+    if not ambiguous and not unmapped:
+        by_sku = sum(m["method"] == "sku" for m in mapping)
+        rules.append(ok("LINES_MAPPED", STAGE, f"All {len(mapping)} line(s) map to {po_id} lines "
+                                               f"({by_sku} by exact SKU, {len(mapping) - by_sku} by description)"))
+    return rules
 
 
 def score_po(ext_lines: list[dict], state: dict, subtotal: Decimal | None) -> float:
@@ -96,10 +145,7 @@ def resolve_po(conn: sqlite3.Connection, ext: dict, vendor: dict | None) -> tupl
         if po["status"] != "open":
             rules.append(hold("PO_CLOSED", STAGE, f"{po_id} status is '{po['status']}'"))
         mapping = map_lines(lines, state["lines"])
-        unmapped = [m["invoice_line"] + 1 for m in mapping if m["po_line_id"] is None]
-        rules.append(hold("LINE_UNMAPPED", STAGE, f"Invoice line(s) {unmapped} match no line on {po_id}",
-                          lines=unmapped) if unmapped
-                     else ok("LINES_MAPPED", STAGE, f"All {len(mapping)} line(s) map to {po_id} lines"))
+        rules += _line_rules(mapping, lines, po_id)
         detail["mapping"] = mapping
         return {"po_id": po_id, "state": state, "mapping": mapping, "method": "explicit"}, rules, detail
 
@@ -136,8 +182,6 @@ def resolve_po(conn: sqlite3.Connection, ext: dict, vendor: dict | None) -> tupl
     rules.append(ok("PO_INFERRED", STAGE,
                     f"No PO printed; inferred {top['po_id']} (score {top['score']:.2f}, lead {lead:.2f} over next "
                     f"candidate; open balance {fmt(top['open_balance'])})", po_id=top["po_id"]))
-    unmapped = [m["invoice_line"] + 1 for m in mapping if m["po_line_id"] is None]
-    if unmapped:
-        rules.append(hold("LINE_UNMAPPED", STAGE, f"Invoice line(s) {unmapped} match no line on {top['po_id']}"))
+    rules += _line_rules(mapping, lines, top["po_id"])
     detail.update(po_id=top["po_id"], mapping=mapping)
     return {"po_id": top["po_id"], "state": state, "mapping": mapping, "method": "inferred"}, rules, detail

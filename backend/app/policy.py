@@ -12,3 +12,8 @@ PO_INFER_MIN_SCORE = 0.80
 PO_INFER_MIN_LEAD = 0.15
 
 DUPLICATE_DATE_WINDOW_DAYS = 14
+
+# Invoice line -> PO line. An exact SKU match decides; otherwise description similarity must reach the
+# minimum, and a runner-up within the tie margin means the line is ambiguous (HOLD, never a guess).
+LINE_MATCH_MIN_SIMILARITY = 0.80
+LINE_TIE_MARGIN = 0.05

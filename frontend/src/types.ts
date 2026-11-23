@@ -60,6 +60,7 @@ export interface Snapshot {
   } | null;
   linked: { id: number; invoice_number: string; invoice_date: string; total: string; approved_run_id: number | null } | null;
   other_runs_of_invoice: { id: number; decision: Decision | null; deciding_rule: string | null }[];
+  next_step: string | null;
 }
 
 export interface Sample {
