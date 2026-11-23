@@ -1,0 +1,92 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { api, DecisionPill, go } from "../lib";
+import type { Sample } from "../types";
+
+export default function Submit({ activeRunId }: { activeRunId: number | null }) {
+  const [samples, setSamples] = useState<Sample[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [drag, setDrag] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { api<Sample[]>("/api/samples").then(setSamples).catch((e) => setError(e.message)); }, []);
+  const groups = useMemo(() => {
+    const g = new Map<string, Sample[]>();
+    samples.forEach((s) => g.set(s.group, [...(g.get(s.group) ?? []), s]));
+    return [...g.entries()];
+  }, [samples]);
+
+  async function start(key: string, req: () => Promise<{ run_id: number }>) {
+    setBusy(key); setError(null);
+    try { go(`#/run/${(await req()).run_id}`); }
+    catch (e) { setError((e as Error).message); }
+    finally { setBusy(null); }
+  }
+
+  function upload(file: File | undefined) {
+    if (!file) return;
+    const body = new FormData();
+    body.append("file", file);
+    start("upload", () => api("/api/runs", { method: "POST", body }));
+  }
+
+  return (
+    <aside className="space-y-4">
+      <div
+        className={`card cursor-pointer border-dashed p-5 text-center transition ${drag ? "border-slate-900 bg-slate-100 dark:border-white dark:bg-slate-800" : "hover:border-slate-400"}`}
+        onClick={() => input.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+        onDragLeave={() => setDrag(false)}
+        onDrop={(e) => { e.preventDefault(); setDrag(false); upload(e.dataTransfer.files[0]); }}
+      >
+        <input ref={input} type="file" accept="application/pdf,.pdf" className="hidden"
+               onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ""; }} />
+        <svg viewBox="0 0 24 24" className="mx-auto h-7 w-7 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.6">
+          <path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <p className="mt-2 text-sm font-medium">{busy === "upload" ? "Uploading…" : "Upload an invoice PDF"}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Drop a file here or click to choose · native or scanned</p>
+      </div>
+
+      {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:bg-rose-500/10 dark:text-rose-300">{error}</p>}
+
+      <div className="card p-4">
+        <div className="flex items-baseline justify-between">
+          <p className="label">Prepared scenarios</p>
+          <a href="#/history" className="text-xs text-slate-500 underline-offset-2 hover:underline">Reset in History</a>
+        </div>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Run top to bottom. Each one runs against the ledger state the earlier ones left behind.
+        </p>
+        <div className="mt-3 space-y-4">
+          {groups.map(([group, items]) => (
+            <div key={group}>
+              <p className="mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">{group}</p>
+              <ul className="space-y-1">
+                {items.map((s) => (
+                  <li key={s.id}>
+                    <button
+                      disabled={!!busy}
+                      onClick={() => start(s.id, () => api(`/api/runs/sample/${s.id}`, { method: "POST" }))}
+                      className="group flex w-full items-start justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-slate-100 disabled:opacity-60 dark:hover:bg-slate-800"
+                    >
+                      <span>
+                        {busy === s.id ? "Starting…" : s.label}
+                        {s.scan && <span className="ml-1.5 rounded bg-slate-200 px-1 py-px text-[10px] font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">SCAN</span>}
+                      </span>
+                      <span className="shrink-0 opacity-70 group-hover:opacity-100" title={`Expected: ${s.expected_decision}${s.expected_rule ? " · " + s.expected_rule : ""}`}>
+                        <DecisionPill decision={s.expected_decision} small />
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-[11px] text-slate-400">Pills show the expected outcome, for checking against the actual decision.</p>
+      </div>
+      {activeRunId && <a href="#/" className="block text-center text-xs text-slate-500 hover:underline">Clear selection</a>}
+    </aside>
+  );
+}

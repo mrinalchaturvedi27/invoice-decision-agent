@@ -1,0 +1,931 @@
+{
+  "461f175860ef0570d1fe1d5d902442c09089e4c806782f88875e052a6b2498b9": {
+    "vendor_name": "Acme Industrial Supply Ltd",
+    "vendor_tax_id": "US-84-1234567",
+    "bank_account_last4": "4821",
+    "invoice_number": "INV-1042-A",
+    "invoice_date": "2026-11-02",
+    "due_date": "2026-12-02",
+    "currency": "USD",
+    "po_references": [
+      "PO-1042"
+    ],
+    "line_items": [
+      {
+        "sku": "WID-100",
+        "description": "Industrial widget, steel",
+        "quantity": "400",
+        "unit_price": "50.00",
+        "amount": "20000.00"
+      }
+    ],
+    "subtotal": "20000.00",
+    "tax": "1600.00",
+    "total": "21600.00",
+    "tax_treatment": "separate",
+    "evidence": [
+      {
+        "field": "invoice_number",
+        "page": 1,
+        "snippet": "INV-1042-A"
+      },
+      {
+        "field": "subtotal",
+        "page": 1,
+        "snippet": "Subtotal 20,000.00"
+      },
+      {
+        "field": "total",
+        "page": 1,
+        "snippet": "Total due (USD) 21,600.00"
+      },
+      {
+        "field": "po_references",
+        "page": 1,
+        "snippet": "PO number PO-1042"
+      },
+      {
+        "field": "tax",
+        "page": 1,
+        "snippet": "1,600.00"
+      },
+      {
+        "field": "line_items[0].quantity",
+        "page": 1,
+        "snippet": "WID-100 Industrial widget, steel 400 50.00 20,000.00"
+      },
+      {
+        "field": "line_items[0].unit_price",
+        "page": 1,
+        "snippet": "WID-100 Industrial widget, steel 400 50.00 20,000.00"
+      },
+      {
+        "field": "line_items[0].amount",
+        "page": 1,
+        "snippet": "WID-100 Industrial widget, steel 400 50.00 20,000.00"
+      }
+    ],
+    "unreadable_fields": [],
+    "notes": null
+  },
+  "01f5a7329f640ecc61422a53b350f7785e4e714c649940d71778a30eea22a076": {
+    "vendor_name": "Acme Industrial Supply Ltd",
+    "vendor_tax_id": "US-84-1234567",
+    "bank_account_last4": "4821",
+    "invoice_number": "INV-1042-B",
+    "invoice_date": "2026-11-09",
+    "due_date": "2026-12-09",
+    "currency": "USD",
+    "po_references": [
+      "PO-1042"
+    ],
+    "line_items": [
+      {
+        "sku": "WID-100",
+        "description": "Industrial widget, steel",
+        "quantity": "600",
+        "unit_price": "50.00",
+        "amount": "30000.00"
+      }
+    ],
+    "subtotal": "30000.00",
+    "tax": "2400.00",
+    "total": "32400.00",
+    "tax_treatment": "separate",
+    "evidence": [
+      {
+        "field": "invoice_number",
+        "page": 1,
+        "snippet": "INV-1042-B"
+      },
+      {
+        "field": "subtotal",
+        "page": 1,
+        "snippet": "Subtotal 30,000.00"
+      },
+      {
+        "field": "total",
+        "page": 1,
+        "snippet": "Total due (USD) 32,400.00"
+      },
+      {
+        "field": "po_references",
+        "page": 1,
+        "snippet": "PO number PO-1042"
+      },
+      {
+        "field": "tax",
+        "page": 1,
+        "snippet": "2,400.00"
+      },
+      {
+        "field": "line_items[0].quantity",
+        "page": 1,
+        "snippet": "WID-100 Industrial widget, steel 600 50.00 30,000.00"
+      },
+      {
+        "field": "line_items[0].unit_price",
+        "page": 1,
+        "snippet": "WID-100 Industrial widget, steel 600 50.00 30,000.00"
+      },
+      {
+        "field": "line_items[0].amount",
+        "page": 1,
+        "snippet": "WID-100 Industrial widget, steel 600 50.00 30,000.00"
+      }
+    ],
+    "unreadable_fields": [],
+    "notes": null
+  },
+  "702de29405f1516e8c018a55f9e5d0add9f703247fed1e6135312f0e94d74602": {
+    "vendor_name": "Acme Industrial Supply Ltd",
+    "vendor_tax_id": "US-84-1234567",
+    "bank_account_last4": "4821",
+    "invoice_number": "INV-1042-C",
+    "invoice_date": "2026-11-16",
+    "due_date": "2026-12-16",
+    "currency": "USD",
+    "po_references": [
+      "PO-1042"
+    ],
+    "line_items": [
+      {
+        "sku": "WID-100",
+        "description": "Industrial widget, steel",
+        "quantity": "560",
+        "unit_price": "50.00",
+        "amount": "28000.00"
+      }
+    ],
+    "subtotal": "28000.00",
+    "tax": "2240.00",
+    "total": "30240.00",
+    "tax_treatment": "separate",
+    "evidence": [
+      {
+        "field": "invoice_number",
+        "page": 1,
+        "snippet": "INV-1042-C"
+      },
+      {
+        "field": "subtotal",
+        "page": 1,
+        "snippet": "Subtotal 28,000.00"
+      },
+      {
+        "field": "total",
+        "page": 1,
+        "snippet": "Total due (USD) 30,240.00"
+      },
+      {
+        "field": "po_references",
+        "page": 1,
+        "snippet": "PO number PO-1042"
+      },
+      {
+        "field": "tax",
+        "page": 1,
+        "snippet": "2,240.00"
+      },
+      {
+        "field": "line_items[0].quantity",
+        "page": 1,
+        "snippet": "WID-100 Industrial widget, steel 560 50.00 28,000.00"
+      },
+      {
+        "field": "line_items[0].unit_price",
+        "page": 1,
+        "snippet": "WID-100 Industrial widget, steel 560 50.00 28,000.00"
+      },
+      {
+        "field": "line_items[0].amount",
+        "page": 1,
+        "snippet": "WID-100 Industrial widget, steel 560 50.00 28,000.00"
+      }
+    ],
+    "unreadable_fields": [],
+    "notes": null
+  },
+  "3733ae64c15af53bea6bca28a3679ffef29de41bee701524ee2611a1ce28e734": {
+    "vendor_name": "Acme Industrial Supply Ltd",
+    "vendor_tax_id": "US-84-1234567",
+    "bank_account_last4": "4821",
+    "invoice_number": "INV-1042-D",
+    "invoice_date": "2026-11-20",
+    "due_date": "2026-12-20",
+    "currency": "USD",
+    "po_references": [
+      "PO-1042"
+    ],
+    "line_items": [
+      {
+        "sku": "WID-100",
+        "description": "Industrial widget, steel",
+        "quantity": "2",
+        "unit_price": "50.00",
+        "amount": "100.00"
+      }
+    ],
+    "subtotal": "100.00",
+    "tax": "8.00",
+    "total": "108.00",
+    "tax_treatment": "separate",
+    "evidence": [
+      {
+        "field": "invoice_number",
+        "page": 1,
+        "snippet": "INV-1042-D"
+      },
+      {
+        "field": "subtotal",
+        "page": 1,
+        "snippet": "Subtotal 100.00"
+      },
+      {
+        "field": "total",
+        "page": 1,
+        "snippet": "Total due (USD) 108.00"
+      },
+      {
+        "field": "po_references",
+        "page": 1,
+        "snippet": "PO number PO-1042"
+      },
+      {
+        "field": "tax",
+        "page": 1,
+        "snippet": "8.00"
+      },
+      {
+        "field": "line_items[0].quantity",
+        "page": 1,
+        "snippet": "WID-100 Industrial widget, steel 2 50.00 100.00"
+      },
+      {
+        "field": "line_items[0].unit_price",
+        "page": 1,
+        "snippet": "WID-100 Industrial widget, steel 2 50.00 100.00"
+      },
+      {
+        "field": "line_items[0].amount",
+        "page": 1,
+        "snippet": "WID-100 Industrial widget, steel 2 50.00 100.00"
+      }
+    ],
+    "unreadable_fields": [],
+    "notes": null
+  },
+  "af1008c2b3c9f4cb2ecc0254b5b17e2bf94626c4abac9715ad80db2a50abc238": {
+    "vendor_name": "Boltline Fasteners Inc",
+    "vendor_tax_id": "US-27-5550199",
+    "bank_account_last4": "3307",
+    "invoice_number": "INV-2231",
+    "invoice_date": "2026-11-05",
+    "due_date": "2026-12-05",
+    "currency": "USD",
+    "po_references": [
+      "PO-2050"
+    ],
+    "line_items": [
+      {
+        "sku": "BLT-M8",
+        "description": "Hex bolt M8 x 40, zinc",
+        "quantity": "500",
+        "unit_price": "6.00",
+        "amount": "3000.00"
+      },
+      {
+        "sku": "NUT-M8",
+        "description": "Hex nut M8, zinc",
+        "quantity": "1000",
+        "unit_price": "3.00",
+        "amount": "3000.00"
+      }
+    ],
+    "subtotal": "6000.00",
+    "tax": "300.00",
+    "total": "6300.00",
+    "tax_treatment": "separate",
+    "evidence": [
+      {
+        "field": "invoice_number",
+        "page": 1,
+        "snippet": "INV-2231"
+      },
+      {
+        "field": "subtotal",
+        "page": 1,
+        "snippet": "Subtotal 6,000.00"
+      },
+      {
+        "field": "total",
+        "page": 1,
+        "snippet": "Total due (USD) 6,300.00"
+      },
+      {
+        "field": "po_references",
+        "page": 1,
+        "snippet": "PO number PO-2050"
+      },
+      {
+        "field": "tax",
+        "page": 1,
+        "snippet": "300.00"
+      },
+      {
+        "field": "line_items[0].quantity",
+        "page": 1,
+        "snippet": "BLT-M8 Hex bolt M8 x 40, zinc 500 6.00 3,000.00"
+      },
+      {
+        "field": "line_items[0].unit_price",
+        "page": 1,
+        "snippet": "BLT-M8 Hex bolt M8 x 40, zinc 500 6.00 3,000.00"
+      },
+      {
+        "field": "line_items[0].amount",
+        "page": 1,
+        "snippet": "BLT-M8 Hex bolt M8 x 40, zinc 500 6.00 3,000.00"
+      },
+      {
+        "field": "line_items[1].quantity",
+        "page": 1,
+        "snippet": "NUT-M8 Hex nut M8, zinc 1000 3.00 3,000.00"
+      },
+      {
+        "field": "line_items[1].unit_price",
+        "page": 1,
+        "snippet": "NUT-M8 Hex nut M8, zinc 1000 3.00 3,000.00"
+      },
+      {
+        "field": "line_items[1].amount",
+        "page": 1,
+        "snippet": "NUT-M8 Hex nut M8, zinc 1000 3.00 3,000.00"
+      }
+    ],
+    "unreadable_fields": [],
+    "notes": null
+  },
+  "40efc1529d3a0022d97a59f80b68ae6d65329ff40777da45b00c9048fa121646": {
+    "vendor_name": "Boltline Fasteners Inc",
+    "vendor_tax_id": "US-27-5550199",
+    "bank_account_last4": "3307",
+    "invoice_number": "2231-R",
+    "invoice_date": "2026-11-05",
+    "due_date": "2026-12-05",
+    "currency": "USD",
+    "po_references": [
+      "PO-2050"
+    ],
+    "line_items": [
+      {
+        "sku": "BLT-M8",
+        "description": "Hex bolt M8 x 40, zinc",
+        "quantity": "500",
+        "unit_price": "6.00",
+        "amount": "3000.00"
+      },
+      {
+        "sku": "NUT-M8",
+        "description": "Hex nut M8, zinc",
+        "quantity": "1000",
+        "unit_price": "3.00",
+        "amount": "3000.00"
+      }
+    ],
+    "subtotal": "6000.00",
+    "tax": "300.00",
+    "total": "6300.00",
+    "tax_treatment": "separate",
+    "evidence": [
+      {
+        "field": "invoice_number",
+        "page": 1,
+        "snippet": "2231-R"
+      },
+      {
+        "field": "subtotal",
+        "page": 1,
+        "snippet": "Subtotal 6,000.00"
+      },
+      {
+        "field": "total",
+        "page": 1,
+        "snippet": "Total due (USD) 6,300.00"
+      },
+      {
+        "field": "po_references",
+        "page": 1,
+        "snippet": "PO number PO-2050"
+      },
+      {
+        "field": "tax",
+        "page": 1,
+        "snippet": "300.00"
+      },
+      {
+        "field": "line_items[0].quantity",
+        "page": 1,
+        "snippet": "BLT-M8 Hex bolt M8 x 40, zinc 500 6.00 3,000.00"
+      },
+      {
+        "field": "line_items[0].unit_price",
+        "page": 1,
+        "snippet": "BLT-M8 Hex bolt M8 x 40, zinc 500 6.00 3,000.00"
+      },
+      {
+        "field": "line_items[0].amount",
+        "page": 1,
+        "snippet": "BLT-M8 Hex bolt M8 x 40, zinc 500 6.00 3,000.00"
+      },
+      {
+        "field": "line_items[1].quantity",
+        "page": 1,
+        "snippet": "NUT-M8 Hex nut M8, zinc 1000 3.00 3,000.00"
+      },
+      {
+        "field": "line_items[1].unit_price",
+        "page": 1,
+        "snippet": "NUT-M8 Hex nut M8, zinc 1000 3.00 3,000.00"
+      },
+      {
+        "field": "line_items[1].amount",
+        "page": 1,
+        "snippet": "NUT-M8 Hex nut M8, zinc 1000 3.00 3,000.00"
+      }
+    ],
+    "unreadable_fields": [],
+    "notes": null
+  },
+  "4e9b931e00cf34f024167f507fc39112f1ec7f4aa14a62997eb0f812e7032497": {
+    "vendor_name": "Crestline Office Supply Co",
+    "vendor_tax_id": "US-61-7781204",
+    "bank_account_last4": "1196",
+    "invoice_number": "CR-77812",
+    "invoice_date": "2026-11-12",
+    "due_date": "2026-12-12",
+    "currency": "USD",
+    "po_references": [],
+    "line_items": [
+      {
+        "sku": "TN-450",
+        "description": "Toner cartridge, black",
+        "quantity": "20",
+        "unit_price": "89.00",
+        "amount": "1780.00"
+      },
+      {
+        "sku": "TN-451",
+        "description": "Toner cartridge, colour",
+        "quantity": "10",
+        "unit_price": "129.00",
+        "amount": "1290.00"
+      }
+    ],
+    "subtotal": "3070.00",
+    "tax": "184.20",
+    "total": "3254.20",
+    "tax_treatment": "separate",
+    "evidence": [
+      {
+        "field": "invoice_number",
+        "page": 1,
+        "snippet": "CR-77812"
+      },
+      {
+        "field": "subtotal",
+        "page": 1,
+        "snippet": "Subtotal 3,070.00"
+      },
+      {
+        "field": "total",
+        "page": 1,
+        "snippet": "Total due (USD) 3,254.20"
+      },
+      {
+        "field": "tax",
+        "page": 1,
+        "snippet": "184.20"
+      },
+      {
+        "field": "line_items[0].quantity",
+        "page": 1,
+        "snippet": "TN-450 Toner cartridge, black 20 89.00 1,780.00"
+      },
+      {
+        "field": "line_items[0].unit_price",
+        "page": 1,
+        "snippet": "TN-450 Toner cartridge, black 20 89.00 1,780.00"
+      },
+      {
+        "field": "line_items[0].amount",
+        "page": 1,
+        "snippet": "TN-450 Toner cartridge, black 20 89.00 1,780.00"
+      },
+      {
+        "field": "line_items[1].quantity",
+        "page": 1,
+        "snippet": "TN-451 Toner cartridge, colour 10 129.00 1,290.00"
+      },
+      {
+        "field": "line_items[1].unit_price",
+        "page": 1,
+        "snippet": "TN-451 Toner cartridge, colour 10 129.00 1,290.00"
+      },
+      {
+        "field": "line_items[1].amount",
+        "page": 1,
+        "snippet": "TN-451 Toner cartridge, colour 10 129.00 1,290.00"
+      }
+    ],
+    "unreadable_fields": [],
+    "notes": null
+  },
+  "dab2c7062e76c406415eae7bcdfece37c37237906e5e69b4dffb290cf07b90fd": {
+    "vendor_name": "Crestline Office Supply Co",
+    "vendor_tax_id": "US-61-7781204",
+    "bank_account_last4": "1196",
+    "invoice_number": "CR-77840",
+    "invoice_date": "2026-11-14",
+    "due_date": "2026-12-14",
+    "currency": "USD",
+    "po_references": [],
+    "line_items": [
+      {
+        "sku": "PP-A4",
+        "description": "Printer paper A4, box of 5 reams",
+        "quantity": "60",
+        "unit_price": "42.00",
+        "amount": "2520.00"
+      }
+    ],
+    "subtotal": "2520.00",
+    "tax": "151.20",
+    "total": "2671.20",
+    "tax_treatment": "separate",
+    "evidence": [
+      {
+        "field": "invoice_number",
+        "page": 1,
+        "snippet": "CR-77840"
+      },
+      {
+        "field": "subtotal",
+        "page": 1,
+        "snippet": "Subtotal 2,520.00"
+      },
+      {
+        "field": "total",
+        "page": 1,
+        "snippet": "Total due (USD) 2,671.20"
+      },
+      {
+        "field": "tax",
+        "page": 1,
+        "snippet": "151.20"
+      },
+      {
+        "field": "line_items[0].quantity",
+        "page": 1,
+        "snippet": "PP-A4 Printer paper A4, box of 5 reams 60 42.00 2,520.00"
+      },
+      {
+        "field": "line_items[0].unit_price",
+        "page": 1,
+        "snippet": "PP-A4 Printer paper A4, box of 5 reams 60 42.00 2,520.00"
+      },
+      {
+        "field": "line_items[0].amount",
+        "page": 1,
+        "snippet": "PP-A4 Printer paper A4, box of 5 reams 60 42.00 2,520.00"
+      }
+    ],
+    "unreadable_fields": [],
+    "notes": null
+  },
+  "21e1eeb4496d334167c1481202c3aa8ab347389380af88b1f7c7071cc1e48f98": {
+    "vendor_name": "Nordvik Pump Systems AS",
+    "vendor_tax_id": "NO-912345678",
+    "bank_account_last4": "6630",
+    "invoice_number": "NV-5501",
+    "invoice_date": "2026-11-03",
+    "due_date": "2026-12-03",
+    "currency": "USD",
+    "po_references": [
+      "PO-4001"
+    ],
+    "line_items": [
+      {
+        "sku": "PMP-75",
+        "description": "Centrifugal pump 7.5 kW",
+        "quantity": "10",
+        "unit_price": "1248.00",
+        "amount": "12480.00"
+      }
+    ],
+    "subtotal": "12480.00",
+    "tax": null,
+    "total": "12480.00",
+    "tax_treatment": "none",
+    "evidence": [
+      {
+        "field": "invoice_number",
+        "page": 1,
+        "snippet": "NV-5501"
+      },
+      {
+        "field": "subtotal",
+        "page": 1,
+        "snippet": "Subtotal 12,480.00"
+      },
+      {
+        "field": "total",
+        "page": 1,
+        "snippet": "Total due (USD) 12,480.00"
+      },
+      {
+        "field": "po_references",
+        "page": 1,
+        "snippet": "PO number PO-4001"
+      },
+      {
+        "field": "line_items[0].quantity",
+        "page": 1,
+        "snippet": "PMP-75 Centrifugal pump 7.5 kW 10 1,248.00 12,480.00"
+      },
+      {
+        "field": "line_items[0].unit_price",
+        "page": 1,
+        "snippet": "PMP-75 Centrifugal pump 7.5 kW 10 1,248.00 12,480.00"
+      },
+      {
+        "field": "line_items[0].amount",
+        "page": 1,
+        "snippet": "PMP-75 Centrifugal pump 7.5 kW 10 1,248.00 12,480.00"
+      }
+    ],
+    "unreadable_fields": [],
+    "notes": null
+  },
+  "d7017b891a32280c0dd930bd8fb818add4a7f1986d674f88a08480b4310d7a9f": {
+    "vendor_name": "Nordvik Pump Systems AS",
+    "vendor_tax_id": "NO-912345678",
+    "bank_account_last4": "9917",
+    "invoice_number": "NV-5502",
+    "invoice_date": "2026-11-06",
+    "due_date": "2026-12-06",
+    "currency": "USD",
+    "po_references": [
+      "PO-4001"
+    ],
+    "line_items": [
+      {
+        "sku": "PMP-75",
+        "description": "Centrifugal pump 7.5 kW",
+        "quantity": "10",
+        "unit_price": "1200.00",
+        "amount": "12000.00"
+      }
+    ],
+    "subtotal": "12000.00",
+    "tax": null,
+    "total": "12000.00",
+    "tax_treatment": "none",
+    "evidence": [
+      {
+        "field": "invoice_number",
+        "page": 1,
+        "snippet": "NV-5502"
+      },
+      {
+        "field": "subtotal",
+        "page": 1,
+        "snippet": "Subtotal 12,000.00"
+      },
+      {
+        "field": "total",
+        "page": 1,
+        "snippet": "Total due (USD) 12,000.00"
+      },
+      {
+        "field": "po_references",
+        "page": 1,
+        "snippet": "PO number PO-4001"
+      },
+      {
+        "field": "line_items[0].quantity",
+        "page": 1,
+        "snippet": "PMP-75 Centrifugal pump 7.5 kW 10 1,200.00 12,000.00"
+      },
+      {
+        "field": "line_items[0].unit_price",
+        "page": 1,
+        "snippet": "PMP-75 Centrifugal pump 7.5 kW 10 1,200.00 12,000.00"
+      },
+      {
+        "field": "line_items[0].amount",
+        "page": 1,
+        "snippet": "PMP-75 Centrifugal pump 7.5 kW 10 1,200.00 12,000.00"
+      }
+    ],
+    "unreadable_fields": [],
+    "notes": null
+  },
+  "9b15c18af103b9a9e8eb8abe496e05e9667dd31c42331023801f41d952a8e224": {
+    "vendor_name": "Nordvik Pump Systems AS",
+    "vendor_tax_id": "NO-912345678",
+    "bank_account_last4": "6630",
+    "invoice_number": "NV-5503",
+    "invoice_date": "2026-11-10",
+    "due_date": "2026-12-10",
+    "currency": "USD",
+    "po_references": [
+      "PO-4001"
+    ],
+    "line_items": [
+      {
+        "sku": "PMP-75",
+        "description": "Centrifugal pump 7.5 kW",
+        "quantity": "25",
+        "unit_price": "1220.01",
+        "amount": "30500.25"
+      }
+    ],
+    "subtotal": "30500.25",
+    "tax": null,
+    "total": "30500.25",
+    "tax_treatment": "none",
+    "evidence": [
+      {
+        "field": "invoice_number",
+        "page": 1,
+        "snippet": "NV-5503"
+      },
+      {
+        "field": "subtotal",
+        "page": 1,
+        "snippet": "Subtotal 30,500.25"
+      },
+      {
+        "field": "total",
+        "page": 1,
+        "snippet": "Total due (USD) 30,500.25"
+      },
+      {
+        "field": "po_references",
+        "page": 1,
+        "snippet": "PO number PO-4001"
+      },
+      {
+        "field": "line_items[0].quantity",
+        "page": 1,
+        "snippet": "PMP-75 Centrifugal pump 7.5 kW 25 1,220.01 30,500.25"
+      },
+      {
+        "field": "line_items[0].unit_price",
+        "page": 1,
+        "snippet": "PMP-75 Centrifugal pump 7.5 kW 25 1,220.01 30,500.25"
+      },
+      {
+        "field": "line_items[0].amount",
+        "page": 1,
+        "snippet": "PMP-75 Centrifugal pump 7.5 kW 25 1,220.01 30,500.25"
+      }
+    ],
+    "unreadable_fields": [],
+    "notes": null
+  },
+  "7257783146193da7217a4dea14bd302456724ba346e517acef29980d338d07d9": {
+    "vendor_name": "Nordvik Pump Systems AS",
+    "vendor_tax_id": "NO-912345678",
+    "bank_account_last4": "6630",
+    "invoice_number": "NV-5504",
+    "invoice_date": "2026-11-13",
+    "due_date": "2026-12-13",
+    "currency": "USD",
+    "po_references": [
+      "PO-4001"
+    ],
+    "line_items": [
+      {
+        "sku": "PMP-75",
+        "description": "Centrifugal pump 7.5 kW",
+        "quantity": "25",
+        "unit_price": "1220.00",
+        "amount": "30500.00"
+      }
+    ],
+    "subtotal": "30500.00",
+    "tax": null,
+    "total": "30500.00",
+    "tax_treatment": "none",
+    "evidence": [
+      {
+        "field": "invoice_number",
+        "page": 1,
+        "snippet": "NV-5504"
+      },
+      {
+        "field": "subtotal",
+        "page": 1,
+        "snippet": "Subtotal 30,500.00"
+      },
+      {
+        "field": "total",
+        "page": 1,
+        "snippet": "Total due (USD) 30,500.00"
+      },
+      {
+        "field": "po_references",
+        "page": 1,
+        "snippet": "PO number PO-4001"
+      },
+      {
+        "field": "line_items[0].quantity",
+        "page": 1,
+        "snippet": "PMP-75 Centrifugal pump 7.5 kW 25 1,220.00 30,500.00"
+      },
+      {
+        "field": "line_items[0].unit_price",
+        "page": 1,
+        "snippet": "PMP-75 Centrifugal pump 7.5 kW 25 1,220.00 30,500.00"
+      },
+      {
+        "field": "line_items[0].amount",
+        "page": 1,
+        "snippet": "PMP-75 Centrifugal pump 7.5 kW 25 1,220.00 30,500.00"
+      }
+    ],
+    "unreadable_fields": [],
+    "notes": null
+  },
+  "99e7a1e6dcc941ccc929ebb6323c53455903b2780f62b79b8a106827794a799e": {
+    "vendor_name": "Crestline Office Supply Co",
+    "vendor_tax_id": "US-61-7781204",
+    "bank_account_last4": "1196",
+    "invoice_number": "CR-77901",
+    "invoice_date": "2026-11-18",
+    "due_date": "2026-12-18",
+    "currency": "USD",
+    "po_references": [
+      "PO-1042"
+    ],
+    "line_items": [
+      {
+        "sku": "CH-200",
+        "description": "Ergonomic office chair",
+        "quantity": "2",
+        "unit_price": "310.00",
+        "amount": "620.00"
+      }
+    ],
+    "subtotal": "620.00",
+    "tax": "37.20",
+    "total": "657.20",
+    "tax_treatment": "separate",
+    "evidence": [
+      {
+        "field": "invoice_number",
+        "page": 1,
+        "snippet": "CR-77901"
+      },
+      {
+        "field": "subtotal",
+        "page": 1,
+        "snippet": "Subtotal 620.00"
+      },
+      {
+        "field": "total",
+        "page": 1,
+        "snippet": "Total due (USD) 657.20"
+      },
+      {
+        "field": "po_references",
+        "page": 1,
+        "snippet": "PO number PO-1042"
+      },
+      {
+        "field": "tax",
+        "page": 1,
+        "snippet": "37.20"
+      },
+      {
+        "field": "line_items[0].quantity",
+        "page": 1,
+        "snippet": "CH-200 Ergonomic office chair 2 310.00 620.00"
+      },
+      {
+        "field": "line_items[0].unit_price",
+        "page": 1,
+        "snippet": "CH-200 Ergonomic office chair 2 310.00 620.00"
+      },
+      {
+        "field": "line_items[0].amount",
+        "page": 1,
+        "snippet": "CH-200 Ergonomic office chair 2 310.00 620.00"
+      }
+    ],
+    "unreadable_fields": [],
+    "notes": null
+  }
+}

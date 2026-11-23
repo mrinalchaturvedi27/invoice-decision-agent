@@ -1,0 +1,10 @@
+po_id,line_no,sku,description,qty,unit_price
+PO-1042,1,WID-100,"Industrial widget, steel",960,50.00
+PO-2050,1,BLT-M8,"Hex bolt M8 x 40, zinc",1000,6.00
+PO-2050,2,NUT-M8,"Hex nut M8, zinc",2000,3.00
+PO-3101,1,TN-450,"Toner cartridge, black",20,89.00
+PO-3101,2,TN-451,"Toner cartridge, colour",10,129.00
+PO-3102,1,CH-200,Ergonomic office chair,12,310.00
+PO-3103,1,PP-A4,"Printer paper A4, box of 5 reams",100,42.00
+PO-3104,1,PP-A4,"Printer paper A4, box of 5 reams",100,42.00
+PO-4001,1,PMP-75,Centrifugal pump 7.5 kW,40,1200.00

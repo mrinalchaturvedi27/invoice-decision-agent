@@ -1,0 +1,128 @@
+[
+  {
+    "id": "e1-a",
+    "file": "e1-a.pdf",
+    "group": "E1 \u00b7 Split billing on PO-1042 ($48,000)",
+    "label": "A \u00b7 bills $20,000 of the PO",
+    "scan": false,
+    "expected_decision": "APPROVE",
+    "expected_rule": null
+  },
+  {
+    "id": "e1-b",
+    "file": "e1-b.pdf",
+    "group": "E1 \u00b7 Split billing on PO-1042 ($48,000)",
+    "label": "B \u00b7 claims $30,000 \u2014 exceeds the $28,000 left",
+    "scan": false,
+    "expected_decision": "HOLD",
+    "expected_rule": "EXCEEDS_OPEN_BALANCE"
+  },
+  {
+    "id": "e1-c",
+    "file": "e1-c.pdf",
+    "group": "E1 \u00b7 Split billing on PO-1042 ($48,000)",
+    "label": "C \u00b7 bills the remaining $28,000",
+    "scan": false,
+    "expected_decision": "APPROVE",
+    "expected_rule": null
+  },
+  {
+    "id": "e1-d",
+    "file": "e1-d.pdf",
+    "group": "E1 \u00b7 Split billing on PO-1042 ($48,000)",
+    "label": "D \u00b7 $100 against the exhausted PO",
+    "scan": false,
+    "expected_decision": "HOLD",
+    "expected_rule": "PO_EXHAUSTED"
+  },
+  {
+    "id": "e2-original",
+    "file": "e2-original.pdf",
+    "group": "E2 \u00b7 Disguised duplicate (PO-2050)",
+    "label": "Original INV-2231",
+    "scan": false,
+    "expected_decision": "APPROVE",
+    "expected_rule": null
+  },
+  {
+    "id": "e2-disguised",
+    "file": "e2-disguised.pdf",
+    "group": "E2 \u00b7 Disguised duplicate (PO-2050)",
+    "label": "Resent as '2231-R', new layout",
+    "scan": false,
+    "expected_decision": "HOLD",
+    "expected_rule": "SUSPECTED_DUPLICATE"
+  },
+  {
+    "id": "e2-resubmit",
+    "file": "e2-original.pdf",
+    "group": "E2 \u00b7 Disguised duplicate (PO-2050)",
+    "label": "Original file uploaded again (byte-identical)",
+    "scan": false,
+    "expected_decision": "REJECT",
+    "expected_rule": "DUPLICATE_OF_APPROVED"
+  },
+  {
+    "id": "e3-a",
+    "file": "e3-a.pdf",
+    "group": "E3 \u00b7 Scanned, no PO reference",
+    "label": "Toner scan \u2014 one PO fits",
+    "scan": true,
+    "expected_decision": "APPROVE",
+    "expected_rule": null
+  },
+  {
+    "id": "e3-b",
+    "file": "e3-b.pdf",
+    "group": "E3 \u00b7 Scanned, no PO reference",
+    "label": "Paper scan \u2014 two POs fit equally",
+    "scan": true,
+    "expected_decision": "HOLD",
+    "expected_rule": "PO_AMBIGUOUS"
+  },
+  {
+    "id": "e4-a",
+    "file": "e4-a.pdf",
+    "group": "E4 \u00b7 Price and bank controls (PO-4001)",
+    "label": "+4% unit price, bank unchanged",
+    "scan": false,
+    "expected_decision": "HOLD",
+    "expected_rule": "PRICE_VARIANCE"
+  },
+  {
+    "id": "e4-b",
+    "file": "e4-b.pdf",
+    "group": "E4 \u00b7 Price and bank controls (PO-4001)",
+    "label": "Exact price, bank details changed",
+    "scan": false,
+    "expected_decision": "HOLD",
+    "expected_rule": "BANK_CHANGED"
+  },
+  {
+    "id": "e4-d",
+    "file": "e4-d.pdf",
+    "group": "E4 \u00b7 Price and bank controls (PO-4001)",
+    "label": "Variance $500.25 \u2014 one step over the $500 cap",
+    "scan": false,
+    "expected_decision": "HOLD",
+    "expected_rule": "PRICE_VARIANCE"
+  },
+  {
+    "id": "e4-c",
+    "file": "e4-c.pdf",
+    "group": "E4 \u00b7 Price and bank controls (PO-4001)",
+    "label": "Variance exactly $500.00 \u2014 at the cap",
+    "scan": false,
+    "expected_decision": "APPROVE",
+    "expected_rule": null
+  },
+  {
+    "id": "x1",
+    "file": "x1.pdf",
+    "group": "Other controls",
+    "label": "Cites another vendor's PO (PO-1042)",
+    "scan": false,
+    "expected_decision": "HOLD",
+    "expected_rule": "PO_VENDOR_MISMATCH"
+  }
+]

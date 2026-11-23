@@ -66,6 +66,17 @@ Rules:
 - notes: anything an AP reviewer should know (bundled lines, handwritten edits, credit notes)."""
 
 
+class ClaudeExtractor:
+    """Runner-facing extractor: returns (extraction dict, meta)."""
+
+    def __call__(self, pdf_bytes: bytes) -> tuple[dict, dict]:
+        import os
+        if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
+            raise RuntimeError("ANTHROPIC_API_KEY is not set on the server, so the invoice can't be read")
+        result, meta = extract_invoice(pdf_bytes)
+        return result.model_dump(), meta
+
+
 def extract_invoice(pdf_bytes: bytes, client: anthropic.Anthropic | None = None) -> tuple[InvoiceExtraction, dict]:
     """Returns (extraction, meta). meta carries model, request id and usage for the run trace."""
     client = client or anthropic.Anthropic()

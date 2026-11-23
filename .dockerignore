@@ -1,0 +1,9 @@
+.venv
+.git
+frontend/node_modules
+frontend/dist
+data/app.db*
+data/uploads
+data/check
+**/__pycache__
+**/.pytest_cache

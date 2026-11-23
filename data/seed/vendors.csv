@@ -1,0 +1,5 @@
+id,name,tax_id,bank_last4,currency,tax_rate
+V-ACME,Acme Industrial Supply Ltd,US-84-1234567,4821,USD,0.08
+V-BOLT,Boltline Fasteners Inc,US-27-5550199,3307,USD,0.05
+V-CREST,Crestline Office Supply Co,US-61-7781204,1196,USD,0.06
+V-NORD,Nordvik Pump Systems AS,NO-912345678,6630,USD,0
