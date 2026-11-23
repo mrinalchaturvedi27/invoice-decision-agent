@@ -2,12 +2,9 @@ services:
   - type: web
     name: invoice-decision-agent
     runtime: docker
-    plan: starter            # persistent disks need a paid instance
+    plan: free               # no persistent disk: data resets when the service sleeps or redeploys.
+                             # For persistence: plan: starter + a disk mounted at /data (paid).
     healthCheckPath: /api/health
-    disk:
-      name: data
-      mountPath: /data
-      sizeGB: 1
     envVars:
       - key: ANTHROPIC_API_KEY
         sync: false          # set in the Render dashboard
@@ -18,4 +15,4 @@ services:
       - key: MODEL_CALLS_PER_DAY
         value: "300"         # server-wide cap on live Claude calls, rolling 24 h
       - key: DATA_DIR
-        value: /data
+        value: /data           # container filesystem on the free plan (ephemeral)
