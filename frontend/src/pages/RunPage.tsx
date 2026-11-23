@@ -66,8 +66,8 @@ function Welcome() {
           Upload an invoice. Watch it get read, checked against the PO, and approved or held with a reason.
         </h1>
         <p className="mt-4 max-w-xl text-[14.5px] leading-relaxed text-ink-2">
-          Start with scenario <span className="font-mono">E1·A</span>: a $20,000 partial bill against a $48,000 PO. Then run
-          <span className="font-mono"> E1·B</span>, a $30,000 bill against the $28,000 that's left. Keep an eye on PO-1042 in the ledger strip above.
+          Start with scenario <span className="font-mono">E1·A</span>: a ₹20,000 partial bill against a ₹48,000 PO. Then run
+          <span className="font-mono"> E1·B</span>, a ₹30,000 bill against the ₹28,000 that's left. Keep an eye on PO-1042 in the ledger strip above.
         </p>
       </div>
       <ol className="grid divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">

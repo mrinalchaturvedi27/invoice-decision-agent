@@ -14,7 +14,7 @@ from rapidfuzz import fuzz
 from app import ledger
 from app.money import D, fmt
 from app.pipeline.rules import hold, ok
-from app.policy import LINE_MATCH_MIN_SIMILARITY, LINE_TIE_MARGIN, PO_INFER_MIN_LEAD, PO_INFER_MIN_SCORE
+from app.policy import LEDGER_CURRENCY, LINE_MATCH_MIN_SIMILARITY, LINE_TIE_MARGIN, PO_INFER_MIN_LEAD, PO_INFER_MIN_SCORE
 
 STAGE = "po"
 
@@ -116,7 +116,7 @@ def resolve_po(conn: sqlite3.Connection, ext: dict, vendor: dict | None) -> tupl
     rules: list[dict] = []
 
     if len(refs) > 1:
-        rules.append(hold("MULTI_PO", STAGE, f"Invoice references {len(refs)} POs ({', '.join(refs)}); v1 handles one"))
+        rules.append(hold("MULTI_PO", STAGE, f"Invoice references {len(refs)} POs ({', '.join(refs)}); only one is supported"))
         return None, rules, {"refs": refs}
 
     if refs:
@@ -140,8 +140,8 @@ def resolve_po(conn: sqlite3.Connection, ext: dict, vendor: dict | None) -> tupl
             rules.append(ok("PO_OWNERSHIP", STAGE, f"{po_id} belongs to this vendor"))
         if currency and currency.upper() != po["currency"]:
             rules.append(hold("CURRENCY_MISMATCH", STAGE, f"Invoice is in {currency}, {po_id} is in {po['currency']}"))
-        else:
-            rules.append(ok("CURRENCY", STAGE, f"Currency {po['currency']}" + ("" if currency else " (not printed; PO currency assumed)")))
+            return None, rules, detail
+        rules.append(ok("CURRENCY", STAGE, f"Currency {po['currency']}" + ("" if currency else " (not printed; PO currency assumed)")))
         if po["status"] != "open":
             rules.append(hold("PO_CLOSED", STAGE, f"{po_id} status is '{po['status']}'"))
         mapping = map_lines(lines, state["lines"])
@@ -152,6 +152,9 @@ def resolve_po(conn: sqlite3.Connection, ext: dict, vendor: dict | None) -> tupl
     # No PO printed: infer among this vendor's open POs.
     if vendor is None:
         rules.append(hold("PO_AMBIGUOUS", STAGE, "No PO reference and the vendor is unknown, so no PO can be inferred"))
+        return None, rules, {"method": "inferred", "candidates": []}
+    if currency and currency.upper() != LEDGER_CURRENCY:
+        rules.append(hold("CURRENCY_MISMATCH", STAGE, f"Invoice is in {currency}, but this ledger is in {LEDGER_CURRENCY}"))
         return None, rules, {"method": "inferred", "candidates": []}
     subtotal = D(ext.get("subtotal"))
     cands = []

@@ -13,6 +13,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from app import config
+from app.policy import LEDGER_CURRENCY
 
 _db_path: Path = config.DB_PATH
 _upload_dir: Path = config.DATA_DIR / "uploads"
@@ -40,7 +41,7 @@ CREATE TABLE IF NOT EXISTS po_lines(
 CREATE TABLE IF NOT EXISTS invoices(
   id INTEGER PRIMARY KEY, sha256 TEXT UNIQUE NOT NULL, filename TEXT, path TEXT NOT NULL,
   pages INTEGER, has_text_layer INTEGER, vendor_id TEXT, invoice_number TEXT, norm_number TEXT,
-  invoice_date TEXT, subtotal TEXT, total TEXT, approved_run_id INTEGER, created_at TEXT);
+  invoice_date TEXT, subtotal TEXT, total TEXT, currency TEXT, approved_run_id INTEGER, created_at TEXT);
 CREATE TABLE IF NOT EXISTS runs(
   id INTEGER PRIMARY KEY, invoice_id INTEGER NOT NULL, status TEXT NOT NULL, attempts INTEGER DEFAULT 0,
   decision TEXT, deciding_rule TEXT, deciding_message TEXT, policy_version TEXT,
@@ -134,6 +135,9 @@ def init() -> None:
         cols = {r["name"] for r in conn.execute("PRAGMA table_info(runs)")}
         if "decided_at" not in cols:  # databases created before decisions were recorded with the posting
             conn.execute("ALTER TABLE runs ADD COLUMN decided_at TEXT")
+        invoice_cols = {r["name"] for r in conn.execute("PRAGMA table_info(invoices)")}
+        if "currency" not in invoice_cols:
+            conn.execute("ALTER TABLE invoices ADD COLUMN currency TEXT")
     finally:
         conn.close()
 
@@ -158,6 +162,8 @@ def _load_seed(conn: sqlite3.Connection) -> None:
 def seed_if_empty() -> None:
     conn = connect()
     try:
+        if conn.execute("SELECT 1 FROM purchase_orders WHERE currency != ? LIMIT 1", (LEDGER_CURRENCY,)).fetchone():
+            raise ValueError(f"Existing ledger uses a different currency. Choose a fresh DB_PATH for {LEDGER_CURRENCY}.")
         if conn.execute("SELECT COUNT(*) FROM vendors").fetchone()[0] == 0:
             conn.execute("BEGIN IMMEDIATE")
             _load_seed(conn)

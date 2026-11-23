@@ -3,7 +3,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = Path(os.environ.get("DATA_DIR", ROOT / "data"))
-DB_PATH = Path(os.environ.get("DB_PATH", DATA_DIR / "app.db"))
+# Use a separate ledger directory so existing USD runs keep their original denomination.
+DB_PATH = Path(os.environ.get("DB_PATH", DATA_DIR / "inr" / "app.db"))
 SEED_DIR = ROOT / "data" / "seed"
 SAMPLES_DIR = ROOT / "data" / "samples"
 FRONTEND_DIST = ROOT / "frontend" / "dist"

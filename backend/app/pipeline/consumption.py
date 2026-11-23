@@ -16,7 +16,7 @@ STAGE = "consumption"
 
 
 def price_allowance(po_unit_price: Decimal, qty: Decimal) -> Decimal:
-    """Allowed overcharge on a line: min(2% of the line's value at PO price, $500)."""
+    """Allowed overcharge on a line: min(2% of the line's value at PO price, ₹500)."""
     return min(PRICE_VARIANCE_PCT * po_unit_price * qty, PRICE_VARIANCE_CAP)
 
 

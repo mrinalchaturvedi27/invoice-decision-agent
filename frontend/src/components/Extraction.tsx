@@ -23,7 +23,7 @@ export default function Extraction({ snap }: { snap: Snapshot }) {
             <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-3">
               {([
                 ["Vendor", ext.vendor_name, false], ["Invoice no.", ext.invoice_number, true], ["Invoice date", ext.invoice_date, true],
-                ["PO printed", ext.po_references?.join(", ") || "none", true], ["Bank, last 4", ext.bank_account_last4, true],
+                ["Currency", ext.currency, true], ["PO printed", ext.po_references?.join(", ") || "none", true], ["Bank, last 4", ext.bank_account_last4, true],
                 ["Tax treatment", ext.tax_treatment, false],
               ] as [string, string | null, boolean][]).map(([k, v, mono]) => (
                 <div key={k} className="min-w-0 border-t border-line pt-1.5">
@@ -43,15 +43,15 @@ export default function Extraction({ snap }: { snap: Snapshot }) {
                   {ext.line_items.map((l: any, i: number) => (
                     <tr key={i} className="border-t border-line">
                       <td className="py-1.5 pr-2 font-mono text-[11.5px]">{l.sku ?? "—"}</td><td className="pr-2">{l.description}</td>
-                      <td className="pr-2 text-right font-mono">{l.quantity ?? "—"}</td><td className="pr-2 text-right font-mono">{money(l.unit_price)}</td>
-                      <td className="text-right font-mono">{money(l.amount)}</td>
+                      <td className="pr-2 text-right font-mono">{l.quantity ?? "—"}</td><td className="pr-2 text-right font-mono">{money(l.unit_price, ext.currency ?? null)}</td>
+                      <td className="text-right font-mono">{money(l.amount, ext.currency ?? null)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="num font-mono">
-                  <tr className="border-t border-line-strong"><td colSpan={4} className="pt-1.5 text-right font-sans text-muted">Subtotal</td><td className="pt-1.5 text-right">{money(ext.subtotal)}</td></tr>
-                  <tr><td colSpan={4} className="text-right font-sans text-muted">Tax</td><td className="text-right">{money(ext.tax)}</td></tr>
-                  <tr><td colSpan={3} /><td className="double-rule pt-1 text-right font-sans font-semibold">Total</td><td className="double-rule pt-1 text-right font-semibold">{money(ext.total)}</td></tr>
+                  <tr className="border-t border-line-strong"><td colSpan={4} className="pt-1.5 text-right font-sans text-muted">Subtotal</td><td className="pt-1.5 text-right">{money(ext.subtotal, ext.currency ?? null)}</td></tr>
+                  <tr><td colSpan={4} className="text-right font-sans text-muted">Tax</td><td className="text-right">{money(ext.tax, ext.currency ?? null)}</td></tr>
+                  <tr><td colSpan={3} /><td className="double-rule pt-1 text-right font-sans font-semibold">Total</td><td className="double-rule pt-1 text-right font-semibold">{money(ext.total, ext.currency ?? null)}</td></tr>
                 </tfoot>
               </table>
             </div>

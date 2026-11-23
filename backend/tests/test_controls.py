@@ -34,7 +34,7 @@ def test_row_swap_passes_text_layer_but_po_comparison_catches_it(runner):
     assert rules["TEXT_LAYER_MATCH"]["ok"] is True          # the limitation, stated as a test
     assert rules["LINE_MATH"]["ok"] is True
     assert (r["decision"], r["deciding_rule"]) == ("HOLD", "PRICE_VARIANCE")
-    assert "NUT-M8 $6.00 vs PO $3.00" in r["deciding_message"]
+    assert "NUT-M8 ₹6.00 vs PO ₹3.00" in r["deciding_message"]
     assert open_balance("PO-2050") == Decimal("12000")
 
 

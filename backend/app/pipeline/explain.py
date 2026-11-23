@@ -26,7 +26,8 @@ You are given an invoice decision that has ALREADY been made by deterministic ru
 Write 2-3 plain sentences: what was decided, the specific reason with the exact figures, and the effect on
 the PO balance. Do not add a next step or recommendation: the reviewer's next step is shown separately,
 from the rules. Use only facts in the input. Do not soften, second-guess, or change the decision.
-Write every money amount as US dollars with a $ sign and thousands separators, e.g. $28,000.00.
+PO amounts are in INR. Use the ₹ symbol and Indian digit grouping for INR amounts, e.g. ₹1,23,456.00.
+Use invoice_currency for invoice amounts and identify other currencies by their ISO code. Do not convert amounts.
 No markdown, no bullet points."""
 
 

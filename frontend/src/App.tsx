@@ -21,7 +21,7 @@ function Mark() {
   );
 }
 
-/** Every PO's open balance, live. Watching PO-1042 fall from $48,000 to $28,000 is the point of the demo. */
+/** Every PO's open balance, live. Watching PO-1042 fall from ₹48,000 to ₹28,000 is the point of the demo. */
 function LedgerStrip() {
   const { pos, changed } = usePoBalances();
   if (!pos.length) return null;

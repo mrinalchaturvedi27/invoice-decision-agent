@@ -1,6 +1,6 @@
-# Decision Policy — v1
+# Decision Policy — v2
 
-Every decision stores `policy_version = "v1"`. Thresholds live in `backend/app/policy.py`.
+Every decision stores `policy_version = "v2"`. Thresholds live in `backend/app/policy.py`.
 
 **The claim:** given the extracted fields, the PO/ledger state, and the policy version, the decision is
 reproducible. Determinism starts *after* extraction, so the checks in §1 exist to catch extraction error.
@@ -39,9 +39,9 @@ Outcomes:
 - Otherwise HOLD `PO_AMBIGUOUS`, listing the candidates with their scores.
 
 ## 3. Consumption (the open balance is a ceiling)
-All comparisons are **pre-tax**. An invoice must pass **every** check below. For example, a full $48,000 bill at +1% is within the price tolerance ($480 ≤ $500) but exceeds the open balance by $480, so it is held. Both controls exist for that reason.
+All comparisons are **pre-tax**. An invoice must pass **every** check below. For example, a full ₹48,000 bill at +1% is within the price tolerance (₹480 ≤ ₹500) but exceeds the open balance by ₹480, so it is held. Both controls exist for that reason.
 - **Price:** for each line, variance = (invoice unit price − PO unit price) × billed qty.
-  - Allowed variance = min(2% × PO unit price × billed qty, $500).
+  - Allowed variance = min(2% × PO unit price × billed qty, ₹500).
   - Over the allowance → HOLD `PRICE_VARIANCE`.
 - **Quantity:** billed qty ≤ open qty on the PO line (else HOLD `QTY_EXCEEDS_OPEN`).
 - **Amount:** subtotal ≤ the PO's open pre-tax balance (else HOLD `EXCEEDS_OPEN_BALANCE`). There is zero tolerance above the ceiling.
@@ -60,7 +60,7 @@ All comparisons are **pre-tax**. An invoice must pass **every** check below. For
 - **REJECT `DUPLICATE_OF_APPROVED`:** the byte-identical file of an invoice that was already approved.
 - **HOLD `SUSPECTED_DUPLICATE`**, linked to the earlier invoice:
   - same vendor and the same normalised invoice number, or
-  - same vendor, same total, and an invoice date within 14 days.
+  - same vendor, same total in the same currency, and an invoice date within 14 days.
 
 ## Evaluation order
 1. Duplicates

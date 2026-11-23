@@ -1,8 +1,8 @@
 id,vendor_id,currency,status,total,description
-PO-1042,V-ACME,USD,open,48000.00,"Steel widgets, Q4 build"
-PO-2050,V-BOLT,USD,open,12000.00,"Fasteners, line 3 retrofit"
-PO-3101,V-CREST,USD,open,3070.00,Printer consumables
-PO-3102,V-CREST,USD,open,3720.00,Office furniture
-PO-3103,V-CREST,USD,open,4200.00,"Paper, Oakland site"
-PO-3104,V-CREST,USD,open,4200.00,"Paper, Fremont site"
-PO-4001,V-NORD,USD,open,48000.00,Cooling loop pumps
+PO-1042,V-ACME,INR,open,48000.00,"Steel widgets, Q4 build"
+PO-2050,V-BOLT,INR,open,12000.00,"Fasteners, line 3 retrofit"
+PO-3101,V-CREST,INR,open,3070.00,Printer consumables
+PO-3102,V-CREST,INR,open,3720.00,Office furniture
+PO-3103,V-CREST,INR,open,4200.00,"Paper, Oakland site"
+PO-3104,V-CREST,INR,open,4200.00,"Paper, Fremont site"
+PO-4001,V-NORD,INR,open,48000.00,Cooling loop pumps

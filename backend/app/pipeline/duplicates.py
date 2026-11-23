@@ -8,7 +8,7 @@ from datetime import date
 
 from app.money import D, fmt
 from app.pipeline.rules import hold, ok, reject
-from app.policy import DUPLICATE_DATE_WINDOW_DAYS
+from app.policy import DUPLICATE_DATE_WINDOW_DAYS, LEDGER_CURRENCY
 
 STAGE = "duplicates"
 
@@ -32,10 +32,11 @@ def _days_apart(a: str | None, b: str | None) -> int | None:
 
 def find_approved_match(conn: sqlite3.Connection, invoice: dict) -> tuple[dict, list[str]] | None:
     """An *approved* invoice from the same vendor that this one looks like (same normalised number, or same
-    total within the date window). Used by the duplicate stage and again inside the posting transaction."""
+    total in the same currency within the date window). Used again inside the posting transaction."""
     if not invoice.get("vendor_id"):
         return None
     norm, total, inv_date = invoice.get("norm_number"), D(invoice.get("total")), invoice.get("invoice_date")
+    currency = invoice.get("currency") or LEDGER_CURRENCY
     for o in conn.execute("SELECT * FROM invoices WHERE vendor_id = ? AND id != ? AND approved_run_id IS NOT NULL "
                           "ORDER BY id", (invoice["vendor_id"], invoice["id"])):
         o, reasons = dict(o), []
@@ -43,8 +44,9 @@ def find_approved_match(conn: sqlite3.Connection, invoice: dict) -> tuple[dict, 
             reasons.append(f"invoice number '{invoice.get('invoice_number')}' normalises to the same '{norm}' "
                            f"as approved '{o['invoice_number']}'")
         days = _days_apart(inv_date, o["invoice_date"])
-        if total is not None and D(o["total"]) == total and days is not None and days <= DUPLICATE_DATE_WINDOW_DAYS:
-            reasons.append(f"same total {fmt(total)} within {days} days of approved '{o['invoice_number']}'")
+        if (currency == (o["currency"] or LEDGER_CURRENCY) and total is not None and D(o["total"]) == total
+                and days is not None and days <= DUPLICATE_DATE_WINDOW_DAYS):
+            reasons.append(f"same total {fmt(total, currency)} within {days} days of approved '{o['invoice_number']}'")
         if reasons:
             return o, reasons
     return None

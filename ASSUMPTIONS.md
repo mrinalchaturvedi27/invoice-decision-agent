@@ -1,8 +1,8 @@
 # Assumptions
 
 - PO amounts are stored pre-tax. Each vendor has one expected tax rate.
-- One invoice references at most one PO. An invoice that references several POs is HOLD (`MULTI_PO`) in v1.
-- Currency is a single ISO code per PO. There is no FX conversion: a mismatch → HOLD.
+- One invoice references at most one PO. An invoice that references several POs is HOLD (`MULTI_PO`).
+- The demo ledger and seeded POs use INR. A different invoice currency triggers HOLD. The app does not convert currencies.
 - "Bank last-4" stands in for full remittance details. A real system would verify the full IBAN or account number out of band.
 - Vendor master, POs, and invoices are generated test data, which Zamp's FAQ allows. One PDF in `data/fresh/` is produced independently of the generator, as a fresh-input check.
 - Approved = scheduled for payment. Payment execution is out of scope.

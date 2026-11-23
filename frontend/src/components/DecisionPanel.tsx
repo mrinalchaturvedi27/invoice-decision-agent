@@ -161,7 +161,7 @@ export default function DecisionPanel({ snap }: { snap: Snapshot }) {
         <section className="card p-5">
           <p className="label">Linked invoice</p>
           <p className="mt-2 text-[14px]">
-            <span className="font-mono">{linked.invoice_number}</span> · {linked.invoice_date} · <span className="num">{money(linked.total)}</span>
+            <span className="font-mono">{linked.invoice_number}</span> · {linked.invoice_date} · <span className="num">{money(linked.total, linked.currency)}</span>
             {linked.approved_run_id && (<> · approved in <a className="font-medium underline underline-offset-2" href={`#/run/${linked.approved_run_id}`}>run #{linked.approved_run_id}</a></>)}
           </p>
         </section>

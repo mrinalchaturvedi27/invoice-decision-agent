@@ -55,11 +55,12 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function go(hash: string) { window.location.hash = hash; }
 
-export function money(v: string | number | null | undefined): string {
+export function money(v: string | number | null | undefined, currency: string | null = "INR"): string {
   if (v === null || v === undefined || v === "") return "—";
   const n = typeof v === "number" ? v : Number(v);
   if (Number.isNaN(n)) return String(v);
-  return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  if (!currency || !/^[A-Z]{3}$/.test(currency)) return n.toLocaleString("en-IN", { minimumFractionDigits: 2 });
+  return n.toLocaleString("en-IN", { style: "currency", currency, currencyDisplay: currency === "INR" ? "symbol" : "code" });
 }
 
 export function time(iso: string | null): string {

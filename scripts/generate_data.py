@@ -30,13 +30,13 @@ BUYER = ["Meridian Manufacturing Corp", "400 Harbor Road", "Oakland, CA 94607"]
 
 VENDORS = [
     dict(id="V-ACME", name="Acme Industrial Supply Ltd", tax_id="US-84-1234567", bank_last4="4821",
-         currency="USD", tax_rate="0.08", address="1200 Foundry Ave, Gary, IN 46402"),
+         currency="INR", tax_rate="0.08", address="1200 Foundry Ave, Gary, IN 46402"),
     dict(id="V-BOLT", name="Boltline Fasteners Inc", tax_id="US-27-5550199", bank_last4="3307",
-         currency="USD", tax_rate="0.05", address="88 Rivet Street, Toledo, OH 43604"),
+         currency="INR", tax_rate="0.05", address="88 Rivet Street, Toledo, OH 43604"),
     dict(id="V-CREST", name="Crestline Office Supply Co", tax_id="US-61-7781204", bank_last4="1196",
-         currency="USD", tax_rate="0.06", address="5 Market Plaza, Sacramento, CA 95814"),
+         currency="INR", tax_rate="0.06", address="5 Market Plaza, Sacramento, CA 95814"),
     dict(id="V-NORD", name="Nordvik Pump Systems AS", tax_id="NO-912345678", bank_last4="6630",
-         currency="USD", tax_rate="0", address="Industriveien 14, 4021 Stavanger, Norway"),
+         currency="INR", tax_rate="0", address="Industriveien 14, 4021 Stavanger, Norway"),
 ]
 V = {v["id"]: v for v in VENDORS}
 
@@ -60,16 +60,16 @@ PAPER, CHAIR, PUMP = ("PP-A4", "Printer paper A4, box of 5 reams"), ("CH-200", "
 
 # Order = demo order. Each runs against the ledger state left by the ones before it.
 INVOICES = [
-    dict(id="e1-a", group="E1 · Split billing on PO-1042 ($48,000)", label="A · bills $20,000 of the PO",
+    dict(id="e1-a", group="E1 · Split billing on PO-1042 (₹48,000)", label="A · bills ₹20,000 of the PO",
          vendor="V-ACME", number="INV-1042-A", date="2026-11-02", po="PO-1042", style="classic",
          lines=[(*WID, 400, "50.00")], expect=("APPROVE", None)),
-    dict(id="e1-b", group="E1 · Split billing on PO-1042 ($48,000)", label="B · claims $30,000 — exceeds the $28,000 left",
+    dict(id="e1-b", group="E1 · Split billing on PO-1042 (₹48,000)", label="B · claims ₹30,000 — exceeds the ₹28,000 left",
          vendor="V-ACME", number="INV-1042-B", date="2026-11-09", po="PO-1042", style="classic",
          lines=[(*WID, 600, "50.00")], expect=("HOLD", "EXCEEDS_OPEN_BALANCE")),
-    dict(id="e1-c", group="E1 · Split billing on PO-1042 ($48,000)", label="C · bills the remaining $28,000",
+    dict(id="e1-c", group="E1 · Split billing on PO-1042 (₹48,000)", label="C · bills the remaining ₹28,000",
          vendor="V-ACME", number="INV-1042-C", date="2026-11-16", po="PO-1042", style="classic",
          lines=[(*WID, 560, "50.00")], expect=("APPROVE", None)),
-    dict(id="e1-d", group="E1 · Split billing on PO-1042 ($48,000)", label="D · $100 against the exhausted PO",
+    dict(id="e1-d", group="E1 · Split billing on PO-1042 (₹48,000)", label="D · ₹100 against the exhausted PO",
          vendor="V-ACME", number="INV-1042-D", date="2026-11-20", po="PO-1042", style="classic",
          lines=[(*WID, 2, "50.00")], expect=("HOLD", "PO_EXHAUSTED")),
     dict(id="e2-original", group="E2 · Disguised duplicate (PO-2050)", label="Original INV-2231",
@@ -92,10 +92,10 @@ INVOICES = [
     dict(id="e4-b", group="E4 · Price and bank controls (PO-4001)", label="Exact price, bank details changed",
          vendor="V-NORD", number="NV-5502", date="2026-11-06", po="PO-4001", style="nordic", bank="9917",
          lines=[(*PUMP, 10, "1200.00")], expect=("HOLD", "BANK_CHANGED")),
-    dict(id="e4-d", group="E4 · Price and bank controls (PO-4001)", label="Variance $500.25 — one step over the $500 cap",
+    dict(id="e4-d", group="E4 · Price and bank controls (PO-4001)", label="Variance ₹500.25 — one step over the ₹500 cap",
          vendor="V-NORD", number="NV-5503", date="2026-11-10", po="PO-4001", style="nordic",
          lines=[(*PUMP, 25, "1220.01")], expect=("HOLD", "PRICE_VARIANCE")),
-    dict(id="e4-c", group="E4 · Price and bank controls (PO-4001)", label="Variance exactly $500.00 — at the cap",
+    dict(id="e4-c", group="E4 · Price and bank controls (PO-4001)", label="Variance exactly ₹500.00 — at the cap",
          vendor="V-NORD", number="NV-5504", date="2026-11-13", po="PO-4001", style="nordic",
          lines=[(*PUMP, 25, "1220.00")], expect=("APPROVE", None)),
     dict(id="x1", group="Other controls", label="Cites another vendor's PO (PO-1042)",
@@ -161,7 +161,7 @@ def draw(path: Path, inv: dict, c_: dict) -> None:
     meta = [(st["num_label"], inv["number"]), (st["date_label"], inv["date"]), ("Due date", c_["due"])]
     if inv["po"]:
         meta.append(("PO number", inv["po"]))
-    meta.append(("Currency", "USD"))
+    meta.append(("Currency", "INR"))
     for i, (k, v) in enumerate(meta):
         c.setFont(st["bold"], 9); c.drawString(340, y - 13 * i, k)
         c.setFont(st["font"], 9); c.drawString(430, y - 13 * i, v)
@@ -185,7 +185,7 @@ def draw(path: Path, inv: dict, c_: dict) -> None:
         rows.append((f"Sales tax ({c_['rate'] * 100:.0f}%)", money(c_["tax"])))
     else:
         rows.append(("Tax", "Exempt — export sale"))
-    rows.append(("Total due (USD)", money(c_["total"])))
+    rows.append(("Total due (INR)", money(c_["total"])))
     for i, (k, v) in enumerate(rows):
         yy = y - 18 - 16 * i
         c.setFont(st["bold"] if i == len(rows) - 1 else st["font"], 10)
@@ -212,7 +212,7 @@ def scanify(src: Path, dst: Path, seed: int) -> None:
 def ground_truth(inv: dict, c_: dict) -> dict:
     ev = [dict(field="invoice_number", page=1, snippet=inv["number"]),
           dict(field="subtotal", page=1, snippet=f"Subtotal {money(c_['subtotal'])}"),
-          dict(field="total", page=1, snippet=f"Total due (USD) {money(c_['total'])}")]
+          dict(field="total", page=1, snippet=f"Total due (INR) {money(c_['total'])}")]
     if inv["po"]:
         ev.append(dict(field="po_references", page=1, snippet=f"PO number {inv['po']}"))
     if c_["tax"] is not None:
@@ -224,7 +224,7 @@ def ground_truth(inv: dict, c_: dict) -> dict:
     vendor = V[inv["vendor"]]
     return dict(
         vendor_name=vendor["name"], vendor_tax_id=vendor["tax_id"], bank_account_last4=c_["bank"],
-        invoice_number=inv["number"], invoice_date=inv["date"], due_date=c_["due"], currency="USD",
+        invoice_number=inv["number"], invoice_date=inv["date"], due_date=c_["due"], currency="INR",
         po_references=[inv["po"]] if inv["po"] else [], line_items=c_["lines"],
         subtotal=str(c_["subtotal"]), tax=None if c_["tax"] is None else str(c_["tax"]), total=str(c_["total"]),
         tax_treatment="separate" if c_["tax"] is not None else "none",
@@ -234,16 +234,17 @@ def ground_truth(inv: dict, c_: dict) -> dict:
 def write_seed() -> None:
     SEED.mkdir(parents=True, exist_ok=True)
     with open(SEED / "vendors.csv", "w", newline="") as f:
-        w = csv.writer(f); w.writerow(["id", "name", "tax_id", "bank_last4", "currency", "tax_rate"])
+        w = csv.writer(f, lineterminator="\n")
+        w.writerow(["id", "name", "tax_id", "bank_last4", "currency", "tax_rate"])
         for v in VENDORS:
             w.writerow([v["id"], v["name"], v["tax_id"], v["bank_last4"], v["currency"], v["tax_rate"]])
     with open(SEED / "purchase_orders.csv", "w", newline="") as f, open(SEED / "po_lines.csv", "w", newline="") as g:
-        w, wl = csv.writer(f), csv.writer(g)
+        w, wl = csv.writer(f, lineterminator="\n"), csv.writer(g)
         w.writerow(["id", "vendor_id", "currency", "status", "total", "description"])
         wl.writerow(["po_id", "line_no", "sku", "description", "qty", "unit_price"])
         for po_id, vid, desc, lines in POS:
             total = sum(Decimal(q) * Decimal(p) for _, _, q, p in lines)
-            w.writerow([po_id, vid, "USD", "open", f"{total:.2f}", desc])
+            w.writerow([po_id, vid, "INR", "open", f"{total:.2f}", desc])
             for n, (sku, d, q, p) in enumerate(lines, 1):
                 wl.writerow([po_id, n, sku, d, q, p])
 

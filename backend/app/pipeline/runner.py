@@ -165,14 +165,16 @@ class Runner:
                 ext, meta = self.extractor(pdf)
                 conn.execute("INSERT OR REPLACE INTO extraction_cache VALUES (?,?,?,?)",
                              (invoice["sha256"], db.dumps(ext), db.dumps(meta), db.now()))
+            currency = (ext.get("currency") or "").strip().upper() or None
+            ext["currency"] = currency
             st.done(f"{ext.get('vendor_name') or 'Unknown vendor'} · {ext.get('invoice_number') or 'no number'} · "
-                    f"{len(ext.get('line_items') or [])} line(s) · total {ext.get('total') or '—'}"
+                    f"{len(ext.get('line_items') or [])} line(s) · total {fmt(D(ext.get('total')), currency)}"
                     + (" · from cache" if cached else ""),
                     {"cached": bool(cached), "meta": meta, "extraction": ext})
         conn.execute("UPDATE runs SET extraction_cached=? WHERE id=?", (int(bool(cached)), run_id))
-        conn.execute("UPDATE invoices SET invoice_number=?, norm_number=?, invoice_date=?, subtotal=?, total=? "
+        conn.execute("UPDATE invoices SET invoice_number=?, norm_number=?, invoice_date=?, subtotal=?, total=?, currency=? "
                      "WHERE id=?", (ext.get("invoice_number"), normalise_number(ext.get("invoice_number")),
-                                    ext.get("invoice_date"), ext.get("subtotal"), ext.get("total"), invoice_id))
+                                    ext.get("invoice_date"), ext.get("subtotal"), ext.get("total"), currency, invoice_id))
 
         with rec.step("vendor") as st:
             vendor, vrules, vdet = check_vendor(conn, ext)
@@ -296,6 +298,7 @@ def explain_context(conn, run_id: int) -> dict:
             "deciding_message": (run["deciding_message"] or "").rstrip("."), "po_id": run["po_id"],
             "balance_before": D(run["balance_before"]), "balance_after": D(run["balance_after"]),
             "subtotal": D(inv["subtotal"]) if run["po_id"] else None, "vendor": vendor["name"] if vendor else None,
-            "invoice_number": inv["invoice_number"], "policy_version": run["policy_version"],
+            "invoice_number": inv["invoice_number"], "invoice_currency": inv["currency"],
+            "policy_version": run["policy_version"],
             "other_failing_rules": [r["message"] for r in trace if r["ok"] is False
                                     and r["rule"] != run["deciding_rule"]]}

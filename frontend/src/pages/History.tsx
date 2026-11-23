@@ -128,7 +128,7 @@ export default function History({ health }: { health: Health | null }) {
                   <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-muted">{time(r.started_at)}</td>
                   <td className="max-w-44 truncate px-3 py-2.5">{r.vendor_name ?? <span className="text-faint">—</span>}</td>
                   <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[12px]">{r.invoice_number ?? r.filename}</td>
-                  <td className="num whitespace-nowrap px-3 py-2.5 text-right font-mono text-[12.5px]">{money(r.total)}</td>
+                  <td className="num whitespace-nowrap px-3 py-2.5 text-right font-mono text-[12.5px]">{money(r.total, r.currency)}</td>
                   <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[12px]">{r.po_id ?? <span className="text-faint">—</span>}{r.po_method === "inferred" && <span className="ml-1 font-sans text-[11px] text-muted">(inferred)</span>}</td>
                   <td className="px-3 py-2.5">
                     {r.status === "done" ? <DecisionPill decision={r.decision} small /> :

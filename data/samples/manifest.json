@@ -2,8 +2,8 @@
   {
     "id": "e1-a",
     "file": "e1-a.pdf",
-    "group": "E1 \u00b7 Split billing on PO-1042 ($48,000)",
-    "label": "A \u00b7 bills $20,000 of the PO",
+    "group": "E1 \u00b7 Split billing on PO-1042 (\u20b948,000)",
+    "label": "A \u00b7 bills \u20b920,000 of the PO",
     "scan": false,
     "expected_decision": "APPROVE",
     "expected_rule": null
@@ -11,8 +11,8 @@
   {
     "id": "e1-b",
     "file": "e1-b.pdf",
-    "group": "E1 \u00b7 Split billing on PO-1042 ($48,000)",
-    "label": "B \u00b7 claims $30,000 \u2014 exceeds the $28,000 left",
+    "group": "E1 \u00b7 Split billing on PO-1042 (\u20b948,000)",
+    "label": "B \u00b7 claims \u20b930,000 \u2014 exceeds the \u20b928,000 left",
     "scan": false,
     "expected_decision": "HOLD",
     "expected_rule": "EXCEEDS_OPEN_BALANCE"
@@ -20,8 +20,8 @@
   {
     "id": "e1-c",
     "file": "e1-c.pdf",
-    "group": "E1 \u00b7 Split billing on PO-1042 ($48,000)",
-    "label": "C \u00b7 bills the remaining $28,000",
+    "group": "E1 \u00b7 Split billing on PO-1042 (\u20b948,000)",
+    "label": "C \u00b7 bills the remaining \u20b928,000",
     "scan": false,
     "expected_decision": "APPROVE",
     "expected_rule": null
@@ -29,8 +29,8 @@
   {
     "id": "e1-d",
     "file": "e1-d.pdf",
-    "group": "E1 \u00b7 Split billing on PO-1042 ($48,000)",
-    "label": "D \u00b7 $100 against the exhausted PO",
+    "group": "E1 \u00b7 Split billing on PO-1042 (\u20b948,000)",
+    "label": "D \u00b7 \u20b9100 against the exhausted PO",
     "scan": false,
     "expected_decision": "HOLD",
     "expected_rule": "PO_EXHAUSTED"
@@ -102,7 +102,7 @@
     "id": "e4-d",
     "file": "e4-d.pdf",
     "group": "E4 \u00b7 Price and bank controls (PO-4001)",
-    "label": "Variance $500.25 \u2014 one step over the $500 cap",
+    "label": "Variance \u20b9500.25 \u2014 one step over the \u20b9500 cap",
     "scan": false,
     "expected_decision": "HOLD",
     "expected_rule": "PRICE_VARIANCE"
@@ -111,7 +111,7 @@
     "id": "e4-c",
     "file": "e4-c.pdf",
     "group": "E4 \u00b7 Price and bank controls (PO-4001)",
-    "label": "Variance exactly $500.00 \u2014 at the cap",
+    "label": "Variance exactly \u20b9500.00 \u2014 at the cap",
     "scan": false,
     "expected_decision": "APPROVE",
     "expected_rule": null

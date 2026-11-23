@@ -49,7 +49,7 @@ export interface Snapshot {
   steps: Step[];
   invoice: {
     id: number; sha256: string; filename: string; pages: number; has_text_layer: number;
-    invoice_number: string | null; invoice_date: string | null; subtotal: string | null; total: string | null;
+    invoice_number: string | null; invoice_date: string | null; subtotal: string | null; total: string | null; currency: string | null;
     approved_run_id: number | null;
   };
   vendor: { id: string; name: string; bank_last4: string; tax_rate: string } | null;
@@ -58,7 +58,7 @@ export interface Snapshot {
     lines: { sku: string; description: string; qty: string; unit_price: string; open_qty: string }[];
     allocations: { run_id: number; invoice_id: number; amount: string; qty: string; invoice_number: string }[];
   } | null;
-  linked: { id: number; invoice_number: string; invoice_date: string; total: string; approved_run_id: number | null } | null;
+  linked: { id: number; invoice_number: string; invoice_date: string; total: string; currency: string | null; approved_run_id: number | null } | null;
   other_runs_of_invoice: { id: number; decision: Decision | null; deciding_rule: string | null }[];
   next_step: string | null;
 }
@@ -75,7 +75,7 @@ export interface HistoryRow {
   balance_before: string | null; balance_after: string | null; extraction_cached: number | null;
   started_at: string; finished_at: string | null; error: string | null;
   invoice_id: number; filename: string; invoice_number: string | null; total: string | null;
-  subtotal: string | null; vendor_name: string | null;
+  subtotal: string | null; currency: string | null; vendor_name: string | null;
 }
 
 export interface Stats { runs: number; APPROVE: number; HOLD: number; REJECT: number; error: number; running: number; approved_amount: number }

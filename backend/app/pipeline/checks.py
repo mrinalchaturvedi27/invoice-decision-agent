@@ -69,16 +69,17 @@ def run_checks(ext: dict, text: str, has_text_layer: bool) -> tuple[list[dict], 
         if bad_lines else ok("LINE_MATH", STAGE, f"{len(lines)} line(s): quantity × unit price = amount"))
 
     sub, tax, total = D(ext.get("subtotal")), D(ext.get("tax")), D(ext.get("total"))
+    currency = ext.get("currency")
     line_sum = sum((D(li.get("amount")) or Decimal(0)) for li in lines)
     problems = []
     if sub is None:
         problems.append("no subtotal")
     elif abs(line_sum - sub) > MONEY_TOLERANCE:
-        problems.append(f"lines sum to {fmt(line_sum)} but subtotal is {fmt(sub)}")
+        problems.append(f"lines sum to {fmt(line_sum, currency)} but subtotal is {fmt(sub, currency)}")
     if sub is not None and total is not None and abs(sub + (tax or 0) - total) > MONEY_TOLERANCE:
-        problems.append(f"subtotal {fmt(sub)} + tax {fmt(tax or Decimal(0))} ≠ total {fmt(total)}")
+        problems.append(f"subtotal {fmt(sub, currency)} + tax {fmt(tax or Decimal(0), currency)} ≠ total {fmt(total, currency)}")
     rules.append(hold("TOTAL_MATH", STAGE, "Totals don't add up: " + "; ".join(problems)) if problems
-                 else ok("TOTAL_MATH", STAGE, f"Lines → subtotal {fmt(sub)} → total {fmt(total)} add up"))
+                 else ok("TOTAL_MATH", STAGE, f"Lines → subtotal {fmt(sub, currency)} → total {fmt(total, currency)} add up"))
 
     treatment = ext.get("tax_treatment")
     rules.append(hold("TAX_BASIS", STAGE, f"Tax treatment is '{treatment}', so the pre-tax amount can't be compared "

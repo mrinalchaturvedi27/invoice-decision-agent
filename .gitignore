@@ -12,3 +12,4 @@ frontend/dist/
 .DS_Store
 data/uploads/
 data/workspaces/
+data/inr/

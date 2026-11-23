@@ -22,7 +22,7 @@ def filters_po(runner):
     conn = db.connect()
     try:
         conn.execute("INSERT INTO purchase_orders VALUES (?,?,?,?,?,?)",
-                     (PO, "V-ACME", "USD", "open", "8000.00", "HVAC filters"))
+                     (PO, "V-ACME", "INR", "open", "8000.00", "HVAC filters"))
         for no, sku in ((1, "FILT-A"), (2, "FILT-B")):
             conn.execute("INSERT INTO po_lines(po_id, line_no, sku, description, qty, unit_price) VALUES (?,?,?,?,?,?)",
                          (PO, no, sku, "Air filter", "100", "40.00"))
@@ -39,14 +39,14 @@ def _invoice(runner, number: str, sku: str | None) -> dict:
     y = 800
     for line in ["Acme Industrial Supply Ltd   Tax ID US-84-1234567", f"Invoice {number}   Date 2026-11-20",
                  f"PO number {PO}", f"{sku or ''} Air filter   30   40.00   1,200.00",
-                 "Subtotal 1,200.00", "Tax 8% 96.00", "Total due (USD) 1,296.00", "Remit to account ending 4821"]:
+                 "Subtotal 1,200.00", "Tax 8% 96.00", "Total due (INR) 1,296.00", "Remit to account ending 4821"]:
         c.drawString(50, y, line)
         y -= 20
     c.save()
     pdf = buf.getvalue()
     row = f"{sku or ''} Air filter 30 40.00 1,200.00".strip()
     ext = {"vendor_name": "Acme Industrial Supply Ltd", "vendor_tax_id": "US-84-1234567", "bank_account_last4": "4821",
-           "invoice_number": number, "invoice_date": "2026-11-20", "due_date": None, "currency": "USD",
+           "invoice_number": number, "invoice_date": "2026-11-20", "due_date": None, "currency": "INR",
            "po_references": [PO],
            "line_items": [{"sku": sku, "description": "Air filter", "quantity": "30", "unit_price": "40.00",
                            "amount": "1200.00"}],

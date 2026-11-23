@@ -38,12 +38,12 @@ def run_snapshot(conn: sqlite3.Connection, run_id: int) -> dict | None:
 
     linked = None
     if run["linked_invoice_id"] and run["linked_invoice_id"] != run["invoice_id"]:
-        l = conn.execute("SELECT id, invoice_number, invoice_date, total, approved_run_id FROM invoices WHERE id = ?",
+        l = conn.execute("SELECT id, invoice_number, invoice_date, total, currency, approved_run_id FROM invoices WHERE id = ?",
                          (run["linked_invoice_id"],)).fetchone()
         linked = dict(l) if l else None
     elif run["deciding_rule"] == "DUPLICATE_OF_APPROVED":
         linked = {"id": inv["id"], "invoice_number": inv["invoice_number"], "invoice_date": inv["invoice_date"],
-                  "total": inv["total"], "approved_run_id": inv["approved_run_id"]}
+                  "total": inv["total"], "currency": inv["currency"], "approved_run_id": inv["approved_run_id"]}
 
     other_runs = [dict(r) for r in conn.execute(
         "SELECT id, decision, deciding_rule, started_at FROM runs WHERE invoice_id = ? AND id != ? ORDER BY id",
@@ -55,7 +55,7 @@ def run_snapshot(conn: sqlite3.Connection, run_id: int) -> dict | None:
 def list_runs(conn: sqlite3.Connection, decision: str | None = None) -> list[dict]:
     sql = ("SELECT r.id, r.status, r.decision, r.deciding_rule, r.deciding_message, r.po_id, r.po_method, "
            "r.balance_before, r.balance_after, r.extraction_cached, r.started_at, r.finished_at, r.error, "
-           "i.id AS invoice_id, i.filename, i.invoice_number, i.total, i.subtotal, v.name AS vendor_name "
+           "i.id AS invoice_id, i.filename, i.invoice_number, i.total, i.subtotal, i.currency, v.name AS vendor_name "
            "FROM runs r JOIN invoices i ON i.id = r.invoice_id LEFT JOIN vendors v ON v.id = i.vendor_id")
     args: tuple = ()
     if decision:

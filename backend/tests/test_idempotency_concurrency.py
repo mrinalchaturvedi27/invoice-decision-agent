@@ -18,7 +18,7 @@ def test_retrying_a_run_is_idempotent(runner):
 
 
 def test_parallel_approvals_cannot_exceed_po(runner):
-    """B ($30,000) and C ($28,000) each fit a fresh $48,000 PO but not together."""
+    """B (₹30,000) and C (₹28,000) each fit a fresh ₹48,000 PO but not together."""
     ids = [runner.create_run(pdf(s), MANIFEST[s]["file"]) for s in ("e1-b", "e1-c")]
     threads = [threading.Thread(target=runner.execute, args=(i,)) for i in ids]
     for t in threads:

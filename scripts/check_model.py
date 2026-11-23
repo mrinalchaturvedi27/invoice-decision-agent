@@ -31,7 +31,7 @@ def make_native(path: Path) -> None:
     c.drawString(50, h - 78, "Tax ID: US-84-1234567   Bank acct ending 4821")
     c.drawString(380, h - 60, "INVOICE  INV-1042-A")
     c.drawString(380, h - 76, "Date: 2026-11-20   Due: 2026-12-20")
-    c.drawString(380, h - 92, "PO: PO-1042   Currency: USD")
+    c.drawString(380, h - 92, "PO: PO-1042   Currency: INR")
     y = h - 140
     c.setFont("Helvetica-Bold", 10)
     for x, t in [(50, "SKU"), (120, "Description"), (330, "Qty"), (380, "Unit price"), (470, "Amount")]:

@@ -51,7 +51,7 @@ def test_concurrent_disguised_duplicate_cannot_also_be_approved(runner, monkeypa
 
 def test_retry_after_failure_past_the_ledger_keeps_the_recorded_approval(runner, monkeypatch):
     submit(runner, "e1-a")
-    submit(runner, "e1-b")                        # held; PO-1042 still $28,000
+    submit(runner, "e1-b")                        # held; PO-1042 still ₹28,000
 
     real, calls = runner_mod.template_explanation, {"n": 0}
 

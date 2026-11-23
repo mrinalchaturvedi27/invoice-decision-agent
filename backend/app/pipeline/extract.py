@@ -56,6 +56,7 @@ SYSTEM = """You extract data from vendor invoices for an accounts-payable contro
 Rules:
 - Transcribe values exactly as printed. Never compute, infer, round, or correct a value.
 - Money and quantities: decimal strings without currency symbols or thousands separators ("20000.00").
+- Currency: use the printed ISO code or an unambiguous symbol. The ₹ symbol means INR.
 - If a value is absent from the document, return null. If it is present but you cannot read it
   with confidence, return null AND list the field name in unreadable_fields.
 - po_references: only PO numbers explicitly printed on the invoice; empty list if none.
