@@ -67,6 +67,14 @@ For each generated sample, the script makes a live extraction call and compares 
 ## Deploy (Render)
 `render.yaml` defines a Docker web service. It mounts a 1 GB disk at `/data` for SQLite and uploads, which needs a paid instance. Set `ANTHROPIC_API_KEY` in the dashboard. `ADMIN_TOKEN` is generated automatically and protects **Reset demo ledger** on the public URL.
 
+**Local container check (2026-11-23).** The image was run the way Render runs it: `PORT=10000`, an admin token, a volume mounted at `/data`, and a live key.
+- E1·A was approved, taking PO-1042 from $48,000 to $28,000.
+- E1·B was held, leaving $28,000.
+- The fresh Chrome-printed PDF was approved.
+- The live stream ended cleanly.
+- Reset was refused (403) with no token or the wrong one, and a file that wasn't a PDF was refused (415).
+- Runs and balances were still there after a container restart.
+
 ## Config (env)
 | Variable | Default | Purpose |
 |---|---|---|
