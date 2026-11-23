@@ -16,7 +16,7 @@ from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from app import budget, config, db, queries
+from app import budget, config, db, ledger, queries
 from app.pipeline.explain import ClaudeExplainer
 from app.pipeline.extract import ClaudeExtractor
 from app.pipeline.runner import STAGES, Runner
@@ -120,6 +120,22 @@ def samples(sb: Path = Depends(sandbox)) -> Response:
             {"id": r["id"], "status": r["status"], "decision": r["decision"], "deciding_rule": r["deciding_rule"]})
     return J([{**{k: v for k, v in m.items() if k != "sha256"}, "runs": by_sha.get(m["sha256"], [])}
               for m in _manifest()])
+
+
+@app.get("/api/pos")
+def list_pos(sb: Path = Depends(sandbox)) -> Response:
+    """Every PO in this sandbox with its live open balance (the ledger strip in the UI)."""
+    conn = db.connect(sb)
+    try:
+        out = []
+        for r in conn.execute("SELECT p.id, p.description, p.status, v.name AS vendor FROM purchase_orders p "
+                              "JOIN vendors v ON v.id = p.vendor_id ORDER BY p.id").fetchall():
+            st = ledger.open_state(conn, r["id"])
+            out.append({"id": r["id"], "vendor": r["vendor"], "description": r["description"], "status": r["status"],
+                        "total": st["total"], "open_balance": st["open_balance"]})
+        return J(out)
+    finally:
+        conn.close()
 
 
 @app.get("/api/samples/{sample_id}/pdf")

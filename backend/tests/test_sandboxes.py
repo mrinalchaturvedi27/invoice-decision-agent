@@ -74,3 +74,12 @@ def test_bad_sandbox_ids_and_the_cap(client, monkeypatch):
     monkeypatch.setattr(config, "MAX_SANDBOXES", 1)
     assert client.get("/api/runs", headers={"X-Workspace": B}).status_code == 503
     assert client.get("/api/runs", headers={"X-Workspace": A}).status_code == 200   # existing ones keep working
+
+
+def test_po_ledger_endpoint_reports_live_balances_per_sandbox(client):
+    _run(client, A, "e1-a")
+    pos = {p["id"]: p for p in client.get("/api/pos", headers={"X-Workspace": A}).json()}
+    assert (pos["PO-1042"]["open_balance"], pos["PO-1042"]["total"]) == ("28000.00", "48000.00")
+    assert pos["PO-1042"]["vendor"] == "Acme Industrial Supply Ltd"
+    other = {p["id"]: p for p in client.get("/api/pos", headers={"X-Workspace": B}).json()}
+    assert other["PO-1042"]["open_balance"] == "48000.00"

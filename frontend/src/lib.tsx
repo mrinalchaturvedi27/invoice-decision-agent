@@ -67,22 +67,48 @@ export function time(iso: string | null): string {
   return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
-export const DECISION_STYLE: Record<Decision, { pill: string; panel: string; word: string }> = {
-  APPROVE: { pill: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300",
-             panel: "border-emerald-300 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-500/10", word: "Approved" },
-  HOLD: { pill: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
-          panel: "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10", word: "Held for review" },
-  REJECT: { pill: "bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300",
-            panel: "border-rose-300 bg-rose-50 dark:border-rose-500/40 dark:bg-rose-500/10", word: "Rejected" },
+export const DECISION_STYLE: Record<Decision, { tone: string; bg: string; border: string; stamp: string; word: string }> = {
+  APPROVE: { tone: "text-approve", bg: "bg-approve-bg", border: "border-approve/40", stamp: "Approved", word: "Approved for payment" },
+  HOLD: { tone: "text-hold", bg: "bg-hold-bg", border: "border-hold/40", stamp: "On hold", word: "Held for review" },
+  REJECT: { tone: "text-reject", bg: "bg-reject-bg", border: "border-reject/40", stamp: "Rejected", word: "Rejected" },
 };
 
+/** Small inline stamp for lists and tables. */
 export function DecisionPill({ decision, small }: { decision: Decision | null; small?: boolean }) {
-  if (!decision) return <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">—</span>;
-  return (
-    <span className={`rounded-full font-semibold ${small ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs"} ${DECISION_STYLE[decision].pill}`}>
-      {decision}
-    </span>
-  );
+  if (!decision) return <span className="font-mono text-[11px] text-faint">—</span>;
+  const st = DECISION_STYLE[decision];
+  return <span className={`stamp stamp-sm ${small ? "text-[9.5px]" : "text-[11px]"} ${st.tone}`}>{st.stamp}</span>;
+}
+
+/** The decision stamp on a run. */
+export function Stamp({ decision, animate }: { decision: Decision; animate?: boolean }) {
+  const st = DECISION_STYLE[decision];
+  return <span className={`stamp text-[13px] ${st.tone} ${animate ? "stamp-in" : ""}`}>{st.stamp}</span>;
+}
+
+export interface PoBalance { id: string; vendor: string; description: string; status: string; total: string; open_balance: string }
+
+/** Live open balance of every PO in this sandbox; ids whose balance just changed are returned in `changed`. */
+export function usePoBalances(intervalMs = 2500): { pos: PoBalance[]; changed: Set<string> } {
+  const [pos, setPos] = useState<PoBalance[]>([]);
+  const [changed, setChanged] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    let prev: Record<string, string> | null = null;
+    let alive = true;
+    const load = () => api<PoBalance[]>("/api/pos").then((next) => {
+      if (!alive) return;
+      if (prev) {
+        const diff = new Set(next.filter((p) => prev![p.id] !== undefined && prev![p.id] !== p.open_balance).map((p) => p.id));
+        if (diff.size) { setChanged(diff); setTimeout(() => alive && setChanged(new Set()), 1900); }
+      }
+      prev = Object.fromEntries(next.map((p) => [p.id, p.open_balance]));
+      setPos(next);
+    }).catch(() => undefined);
+    load();
+    const t = setInterval(load, intervalMs);
+    return () => { alive = false; clearInterval(t); };
+  }, [intervalMs]);
+  return { pos, changed };
 }
 
 export function useRunStream(runId: number): Snapshot | null {
