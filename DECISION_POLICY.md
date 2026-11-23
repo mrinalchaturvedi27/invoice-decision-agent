@@ -15,8 +15,9 @@ Outcomes:
 |---|---|---|
 | Line arithmetic | qty × unit price = line amount (±0.01) for every line | HOLD `LINE_MATH` |
 | Totals | Σ lines = subtotal; subtotal + tax = total (±0.01) | HOLD `TOTAL_MATH` |
-| Text-layer cross-check (native PDFs) | Every critical value (invoice no., PO ref, qty, unit price, line amounts, subtotal, tax, total) appears in the PDF's own text layer (`pypdf`, independent of the model) | HOLD `NOT_IN_TEXT_LAYER` |
-| Scanned PDFs | Critical fields must carry page evidence; any critical field reported unreadable | HOLD `UNREADABLE_FIELD` |
+| Text-layer presence (native PDFs) | Every critical value (invoice no., PO ref, qty, unit price, line amounts, subtotal, tax, total) appears *somewhere* in the PDF's own text layer (`pypdf`, independent of the model). Presence only: a real number assigned to the wrong row still passes, which the §3 per-line PO comparison then has to catch | HOLD `NOT_IN_TEXT_LAYER` |
+| Scan legibility | The model reports any critical field as unreadable | HOLD `UNREADABLE_FIELD` |
+| Scan evidence | Each decision-critical field has its **own** non-empty page-evidence entry: invoice no., PO ref (if printed), subtotal, tax (if charged), total, and quantity, unit price, and amount for every line. Evidence for one field never vouches for another. The model reports evidence from the same read as the values, so this checks completeness, not truth | HOLD `MISSING_EVIDENCE` |
 | Missing essentials | No invoice number or no total | HOLD `MISSING_FIELD` |
 | Tax basis | Tax treatment must be `separate` or `none`; `inclusive` or `unclear` prevents a like-for-like comparison | HOLD `TAX_BASIS` |
 
@@ -34,7 +35,7 @@ Outcomes:
 - Otherwise HOLD `PO_AMBIGUOUS`, listing the candidates with their scores.
 
 ## 3. Consumption (the open balance is a ceiling)
-All comparisons are **pre-tax**.
+All comparisons are **pre-tax**. An invoice must pass **every** check below. For example, a full $48,000 bill at +1% is within the price tolerance ($480 ≤ $500) but exceeds the open balance by $480, so it is held. Both controls exist for that reason.
 - **Price:** for each line, variance = (invoice unit price − PO unit price) × billed qty.
   - Allowed variance = min(2% × PO unit price × billed qty, $500).
   - Over the allowance → HOLD `PRICE_VARIANCE`.

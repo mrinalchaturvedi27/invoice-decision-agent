@@ -47,6 +47,10 @@ export default function Submit({ activeRunId }: { activeRunId: number | null }) 
         <p className="mt-2 text-sm font-medium">{busy === "upload" ? "Uploading…" : "Upload an invoice PDF"}</p>
         <p className="text-xs text-slate-500 dark:text-slate-400">Drop a file here or click to choose · native or scanned</p>
       </div>
+      <p className="-mt-2 px-1 text-[11px] leading-snug text-slate-500 dark:text-slate-400">
+        <span className="font-semibold text-slate-600 dark:text-slate-300">Shared workspace:</span> uploaded PDFs, extracted
+        fields and decisions are visible to everyone with this link. Use synthetic invoices only.
+      </p>
 
       {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:bg-rose-500/10 dark:text-rose-300">{error}</p>}
 

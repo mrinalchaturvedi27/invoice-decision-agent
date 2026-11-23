@@ -91,24 +91,58 @@ def run_checks(ext: dict, text: str, has_text_layer: bool) -> tuple[list[dict], 
         not_found = [(f, v) for f, kind, v in crit
                      if (kind == "num" and D(v) not in nums) or (kind == "id" and _alnum(v) not in alnum)]
         detail["verified_against_text_layer"] = len(crit) - len(not_found)
+        # Presence check only: a value is accepted if it appears anywhere in the document, not necessarily on
+        # the same row. Row assignment errors are caught downstream by the per-line PO price/quantity comparison.
         rules.append(hold("NOT_IN_TEXT_LAYER", STAGE,
-                          "Extracted values not found in the PDF's own text: " +
+                          "Extracted values that appear nowhere in the PDF's own text: " +
                           ", ".join(f"{f}={v}" for f, v in not_found),
                           values=[{"field": f, "value": v} for f, v in not_found]) if not_found
                      else ok("TEXT_LAYER_MATCH", STAGE,
-                             f"All {len(crit)} critical values found in the PDF's own text layer"))
+                             f"All {len(crit)} critical values appear in the PDF's own text layer "
+                             f"(presence only; row assignment is checked against the PO)"))
     else:
-        unreadable = ext.get("unreadable_fields") or []
-        evidenced = {e.get("field", "") for e in ext.get("evidence") or []}
-        needs = ["invoice_number", "subtotal", "total"] + [f"line_items[{i}]" for i in range(len(lines))]
-        no_evidence = [f for f in needs if not any(e == f or e.startswith(f + ".") or e.startswith(f + "[")
-                                                   for e in evidenced)]
-        if unreadable or no_evidence:
-            parts = ([f"unreadable: {', '.join(unreadable)}"] if unreadable else []) + \
-                    ([f"no page evidence for: {', '.join(no_evidence)}"] if no_evidence else [])
-            rules.append(hold("UNREADABLE_FIELD", STAGE, "Scan is not legible enough to rely on — " + "; ".join(parts),
-                              unreadable=unreadable, no_evidence=no_evidence))
-        else:
-            rules.append(ok("SCAN_EVIDENCE", STAGE, f"Scanned document: every critical field has page evidence; "
-                                                    f"PO price/quantity agreement is the independent check"))
+        unreadable = [f for f in (ext.get("unreadable_fields") or []) if f]
+        evidenced = {normalise_field(e.get("field")) for e in ext.get("evidence") or [] if (e.get("snippet") or "").strip()}
+        needs = required_evidence(ext)
+        no_evidence = [f for f in needs if f not in evidenced]
+        detail["evidence_required"] = len(needs)
+        detail["evidence_present"] = len(needs) - len(no_evidence)
+        if unreadable:
+            rules.append(hold("UNREADABLE_FIELD", STAGE, f"Scan not legible enough to rely on: unreadable "
+                                                         f"{', '.join(unreadable)}", unreadable=unreadable))
+        if no_evidence:
+            rules.append(hold("MISSING_EVIDENCE", STAGE, f"No page evidence for {len(no_evidence)} of {len(needs)} "
+                                                         f"decision-critical fields: {', '.join(no_evidence)}",
+                              no_evidence=no_evidence))
+        if not unreadable and not no_evidence:
+            rules.append(ok("SCAN_EVIDENCE", STAGE, f"Scanned document: all {len(needs)} decision-critical fields have "
+                                                    f"their own page evidence. The model reports that evidence from "
+                                                    f"the same read, so the PO price/quantity comparison is the "
+                                                    f"independent check"))
     return rules, detail
+
+
+_ALIASES = {"qty": "quantity", "price": "unit_price", "unitprice": "unit_price", "rate": "unit_price",
+            "line_total": "amount", "linetotal": "amount", "total": "amount"}
+
+
+def normalise_field(name: str | None) -> str:
+    """'line_items.0.qty' / 'Line_Items[0].Quantity' -> 'line_items[0].quantity'; 'po_references[0]' -> 'po_references'."""
+    s = (name or "").strip().lower().replace(" ", "_")
+    s = re.sub(r"\.(\d+)(?=\.|$)", r"[\1]", s)
+    m = re.fullmatch(r"line_items\[(\d+)\]\.(\w+)", s)
+    if m:
+        return f"line_items[{m.group(1)}].{_ALIASES.get(m.group(2), m.group(2))}"
+    return re.sub(r"\[\d+\]$", "", s)
+
+
+def required_evidence(ext: dict) -> list[str]:
+    """Every field the decision depends on needs its own evidence entry."""
+    need = ["invoice_number", "subtotal", "total"]
+    if ext.get("tax") is not None:
+        need.append("tax")
+    if ext.get("po_references"):
+        need.append("po_references")
+    for i in range(len(ext.get("line_items") or [])):
+        need += [f"line_items[{i}].quantity", f"line_items[{i}].unit_price", f"line_items[{i}].amount"]
+    return need

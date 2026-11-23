@@ -28,9 +28,9 @@ def test_underbilling_never_fails_price():
     assert price_variance_ok(D("50"), D("45"), D("100"))[0] is True
 
 
-def test_full_po_bill_with_any_overcharge_hits_the_ceiling_first():
-    """At a $48,000 base billed in full, even a within-tolerance +1% exceeds the open balance.
-    Price tolerance only matters on partial bills — the ceiling governs the rest."""
+def test_invoice_must_pass_both_price_tolerance_and_ceiling():
+    """An invoice must pass both controls. A full $48,000 bill at +1% is within price tolerance
+    ($480 ≤ $500) but exceeds the open balance by $480 — so it is held by the ceiling."""
     from app.pipeline.consumption import check_consumption
     state = {"po": {"id": "PO-X"}, "total": D("48000"), "open_balance": D("48000"),
              "lines": {1: {"id": 1, "line_no": 1, "sku": "P", "description": "pump", "qty": D("40"),
@@ -39,5 +39,6 @@ def test_full_po_bill_with_any_overcharge_hits_the_ceiling_first():
                            "amount": "48480.00"}], "subtotal": "48480.00", "tax": None, "tax_treatment": "none"}
     rules, _ = check_consumption(ext, None, {"state": state, "mapping": [{"invoice_line": 0, "po_line_id": 1}],
                                              "po_id": "PO-X"})
-    failing = [r["rule"] for r in rules if r["ok"] is False]
-    assert failing == ["EXCEEDS_OPEN_BALANCE"]
+    by_rule = {r["rule"]: r for r in rules}
+    assert by_rule["PRICE_WITHIN_TOLERANCE"]["ok"] is True
+    assert [r["rule"] for r in rules if r["ok"] is False] == ["EXCEEDS_OPEN_BALANCE"]

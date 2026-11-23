@@ -17,7 +17,7 @@ MoneyStr = Optional[str]  # decimal string as printed, without symbols or thousa
 
 
 class Evidence(BaseModel):
-    field: str = Field(description="Field name, e.g. 'total' or 'line_items[0].quantity'")
+    field: str = Field(description="Exact field name, e.g. 'total', 'po_references' or 'line_items[0].unit_price'")
     page: int = Field(description="1-indexed page number")
     snippet: str = Field(description="Verbatim text from the page that this value was read from")
 
@@ -61,8 +61,10 @@ Rules:
 - po_references: only PO numbers explicitly printed on the invoice; empty list if none.
 - tax_treatment: "separate" if tax is a distinct amount, "inclusive" if prices include tax with no
   separate amount, "none" if no tax applies, "unclear" otherwise.
-- evidence: for invoice_number, po_references, every line's quantity/unit_price/amount, subtotal,
-  tax and total, give the page and the verbatim snippet you read it from.
+- evidence: one entry per field, using exactly these field names: invoice_number, po_references, subtotal,
+  tax, total, and for each line i: line_items[i].quantity, line_items[i].unit_price, line_items[i].amount.
+  Give the page and the verbatim snippet you read that value from. Omit an entry only if you did not
+  read that value from the page.
 - notes: anything an AP reviewer should know (bundled lines, handwritten edits, credit notes)."""
 
 

@@ -6,8 +6,9 @@ You upload an invoice PDF. The agent produces a reasoned **APPROVE / HOLD / REJE
 
 The claim we stand behind is: *given the extracted fields, the PO state, and the policy version, the decision is reproducible.* Extraction is the one part that isn't deterministic, so it is verified rather than trusted:
 - quantity × unit price is checked on every line, and the totals are checked;
-- every critical number is cross-checked against the PDF's own text layer;
-- scans that can't be checked that way need page evidence for every critical field.
+- each critical number must appear somewhere in the PDF's own text layer;
+- the billed quantities and prices are then compared line by line with the PO, which catches a real number put on the wrong row;
+- scans have no text layer, so each decision-critical field needs its own page-evidence entry. That evidence comes from the same model read, so on scans the PO comparison is the independent check.
 
 See [DECISION_POLICY.md](DECISION_POLICY.md), [PROCESS_MAP.md](PROCESS_MAP.md), [ASSUMPTIONS.md](ASSUMPTIONS.md).
 
@@ -46,6 +47,17 @@ Tests use an isolated SQLite file per test. They replace Claude with `FixtureExt
 | x1 | Cites another vendor's real PO → HOLD `PO_VENDOR_MISMATCH` |
 
 **Fresh-input check:** `data/fresh/` is for a PDF that wasn't produced by the generator (for example, one typed in Google Docs and exported). No test fixture or cache covers it.
+
+## Who can see what (hosted demo)
+The hosted app is a **shared evaluator workspace**. Anyone with the URL can read run history, run details, extracted fields, and the original uploaded PDFs. Only **Reset demo ledger** is protected, by `ADMIN_TOKEN`. The upload panel says this, so use synthetic invoices only. If reviewers need to upload confidential invoices, those read endpoints (`/api/runs*`, `/api/invoices/*/pdf`) need access control before deployment.
+
+## First keyed rehearsal
+```bash
+export ANTHROPIC_API_KEY=...
+.venv/bin/python scripts/rehearse.py                       # E1·A, E1·B, both scans: uncached, field by field
+.venv/bin/python scripts/rehearse.py data/fresh/mine.pdf   # plus an independently authored PDF
+```
+For each generated sample, the script makes a live extraction call and compares it field by field with what the PDF actually prints. It reports latency, mismatched values, and missing evidence even when the final decision would match. For a fresh PDF it prints the extraction and the verification rules it would face. It never touches the app database.
 
 ## Deploy (Render)
 `render.yaml` defines a Docker web service. It mounts a 1 GB disk at `/data` for SQLite and uploads, which needs a paid instance. Set `ANTHROPIC_API_KEY` in the dashboard. `ADMIN_TOKEN` is generated automatically and protects **Reset demo ledger** on the public URL.
