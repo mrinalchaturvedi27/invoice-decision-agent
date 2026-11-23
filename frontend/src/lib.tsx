@@ -1,8 +1,38 @@
 import { useEffect, useState } from "react";
 import type { Decision, Health, Snapshot } from "./types";
 
+// Each browser gets its own demo ledger on the server, keyed by a random id kept in localStorage.
+const SANDBOX_KEY = "invoice-agent-sandbox";
+const SANDBOX_RE = /^[A-Za-z0-9_-]{16,64}$/;
+function newId(): string {
+  const a = new Uint8Array(16);
+  crypto.getRandomValues(a);
+  return Array.from(a, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+let SANDBOX: string = (() => {
+  try {
+    const v = localStorage.getItem(SANDBOX_KEY);
+    if (v && SANDBOX_RE.test(v)) return v;
+    const n = newId();
+    localStorage.setItem(SANDBOX_KEY, n);
+    return n;
+  } catch { return newId(); }   // storage blocked: a sandbox for this page load only
+})();
+export function sandboxId(): string { return SANDBOX; }
+export function startNewSandbox(): void {
+  SANDBOX = newId();
+  try { localStorage.setItem(SANDBOX_KEY, SANDBOX); } catch { /* page-load only */ }
+}
+/** For URLs the browser fetches itself (EventSource, iframe), where a header can't be set. */
+export function inSandbox(path: string): string {
+  const [base, hash] = path.split("#");
+  return `${base}${base.includes("?") ? "&" : "?"}ws=${SANDBOX}${hash ? "#" + hash : ""}`;
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const r = await fetch(path, init);
+  const headers = new Headers(init?.headers);
+  headers.set("X-Workspace", SANDBOX);
+  const r = await fetch(path, { ...init, headers });
   if (!r.ok) {
     let detail = r.statusText;
     try { detail = (await r.json()).detail ?? detail; } catch { /* not json */ }
@@ -48,7 +78,7 @@ export function useRunStream(runId: number): Snapshot | null {
   useEffect(() => {
     setSnap(null);
     let closed = false;
-    const es = new EventSource(`/api/runs/${runId}/stream`);
+    const es = new EventSource(inSandbox(`/api/runs/${runId}/stream`));
     es.onmessage = (e) => setSnap(JSON.parse(e.data));
     es.addEventListener("end", () => { closed = true; es.close(); });
     es.onerror = () => {

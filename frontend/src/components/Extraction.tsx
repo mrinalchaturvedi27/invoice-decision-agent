@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { money } from "../lib";
+import { inSandbox, money } from "../lib";
 import type { Snapshot } from "../types";
 
 export default function Extraction({ snap }: { snap: Snapshot }) {
@@ -78,7 +78,7 @@ export default function Extraction({ snap }: { snap: Snapshot }) {
           <button onClick={() => setShowPdf(!showPdf)} className="text-xs text-slate-500 hover:underline">{showPdf ? "Hide" : "Show"}</button>
         </div>
         <p className="mt-1 truncate text-xs text-slate-500">{snap.invoice.filename} · {snap.invoice.pages} page(s) · {snap.invoice.has_text_layer ? "text layer present" : "image only (scan)"}</p>
-        {showPdf && <iframe title="Invoice PDF" src={`/api/invoices/${snap.invoice.id}/pdf#view=FitH`} className="mt-3 h-[560px] w-full rounded-lg border border-slate-200 bg-white dark:border-slate-700" />}
+        {showPdf && <iframe title="Invoice PDF" src={inSandbox(`/api/invoices/${snap.invoice.id}/pdf#view=FitH`)} className="mt-3 h-[560px] w-full rounded-lg border border-slate-200 bg-white dark:border-slate-700" />}
       </section>
     </div>
   );

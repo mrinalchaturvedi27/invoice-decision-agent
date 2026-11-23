@@ -1,9 +1,13 @@
 """SQLite storage. Plain sqlite3 so the ledger transaction (BEGIN IMMEDIATE) is explicit."""
 from __future__ import annotations
 
+import contextvars
 import csv
 import json
+import re
 import sqlite3
+import threading
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -12,6 +16,16 @@ from app import config
 
 _db_path: Path = config.DB_PATH
 _upload_dir: Path = config.DATA_DIR / "uploads"
+# Each browser gets its own sandbox database (same seed, own ledger and history). Code that runs for a
+# sandbox sets this for the duration; with nothing set, the default database is used (tests, scripts).
+_current: contextvars.ContextVar[Path | None] = contextvars.ContextVar("db_path", default=None)
+SANDBOX_ID = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
+_ready: set[Path] = set()
+_ready_lock = threading.Lock()
+
+
+class SandboxLimit(Exception):
+    pass
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS vendors(
@@ -57,9 +71,46 @@ def upload_dir() -> Path:
     return _upload_dir
 
 
-def connect() -> sqlite3.Connection:
-    _db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(_db_path, timeout=30, isolation_level=None, check_same_thread=False)
+def default_path() -> Path:
+    return _db_path
+
+
+@contextmanager
+def use(path: Path):
+    """Route db.connect() in this thread/context to the given database."""
+    token = _current.set(Path(path))
+    try:
+        yield
+    finally:
+        _current.reset(token)
+
+
+def sandbox_path(sandbox_id: str | None) -> Path:
+    """Database for a sandbox id, created and seeded on first use. None → the default database."""
+    if not sandbox_id:
+        return _db_path
+    if not SANDBOX_ID.match(sandbox_id):
+        raise ValueError("invalid sandbox id")
+    folder = _db_path.parent / "workspaces"
+    path = folder / f"{sandbox_id}.db"
+    if path in _ready and path.exists():
+        return path
+    with _ready_lock:
+        if not path.exists():
+            folder.mkdir(parents=True, exist_ok=True)
+            if sum(1 for _ in folder.glob("*.db")) >= config.MAX_SANDBOXES:
+                raise SandboxLimit()
+        with use(path):
+            init()
+            seed_if_empty()
+        _ready.add(path)
+    return path
+
+
+def connect(path: Path | None = None) -> sqlite3.Connection:
+    path = Path(path) if path else (_current.get() or _db_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(path, timeout=30, isolation_level=None, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA busy_timeout=30000")

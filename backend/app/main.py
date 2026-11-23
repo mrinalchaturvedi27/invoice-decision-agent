@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
+import os
 import threading
 import time
 from contextlib import asynccontextmanager
+from functools import lru_cache
 from pathlib import Path
 
-from fastapi import FastAPI, File, Header, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -34,62 +37,102 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Invoice Decision Agent", lifespan=lifespan)
 
 
+def sandbox(x_workspace: str | None = Header(default=None), ws: str | None = None) -> Path:
+    """The caller's sandbox database. Browsers send a random id (header, or ?ws= where a header can't be set:
+    EventSource, iframes). No id → the default database."""
+    try:
+        return db.sandbox_path(x_workspace or ws)
+    except ValueError:
+        raise HTTPException(400, "Invalid sandbox id")
+    except db.SandboxLimit:
+        raise HTTPException(503, "Too many sandboxes on this server; ask the admin to clear old ones")
+
+
 def J(obj, status: int = 200) -> Response:
     return Response(content=db.dumps(obj), media_type="application/json", status_code=status)
 
 
-def _start(request: Request, pdf_bytes: bytes, filename: str) -> Response:
+def _in_sandbox(path: Path, fn, *args) -> None:
+    with db.use(path):
+        fn(*args)
+
+
+@lru_cache
+def _manifest() -> list[dict]:
+    items = json.loads((config.SAMPLES_DIR / "manifest.json").read_text())
+    for m in items:
+        m["sha256"] = hashlib.sha256((config.SAMPLES_DIR / m["file"]).read_bytes()).hexdigest()
+    return items
+
+
+def _sample(sample_id: str) -> dict:
+    m = next((s for s in _manifest() if s["id"] == sample_id), None)
+    if m is None:
+        raise HTTPException(404, "Unknown sample")
+    return m
+
+
+def _start(request: Request, sb: Path, pdf_bytes: bytes, filename: str) -> Response:
     if len(pdf_bytes) > config.MAX_UPLOAD_BYTES:
         raise HTTPException(413, "PDF is larger than 10 MB")
     if not pdf_bytes.startswith(b"%PDF"):
         raise HTTPException(415, "Only PDF invoices are accepted")
     runner: Runner = request.app.state.runner
     try:
-        run_id = runner.create_run(pdf_bytes, filename)
+        with db.use(sb):
+            run_id = runner.create_run(pdf_bytes, filename)
     except Exception as e:
         raise HTTPException(422, f"Could not open the PDF: {e}")
-    threading.Thread(target=runner.execute, args=(run_id,), daemon=True).start()
+    threading.Thread(target=_in_sandbox, args=(sb, runner.execute, run_id), daemon=True).start()
     return J({"run_id": run_id}, 201)
 
 
 @app.get("/api/health")
-def health() -> Response:
-    import os
+def health(sb: Path = Depends(sandbox)) -> Response:
     return J({"status": "ok", "policy_version": POLICY_VERSION, "extract_model": config.EXTRACT_MODEL,
               "model_credentials": bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")),
-              "stages": STAGES, "reset_requires_token": bool(config.ADMIN_TOKEN)})
+              "stages": STAGES, "sandbox": sb != db.default_path(),
+              "reset_requires_token": bool(config.ADMIN_TOKEN) and sb == db.default_path()})
 
 
 @app.get("/api/samples")
-def samples() -> Response:
-    return J(json.loads((config.SAMPLES_DIR / "manifest.json").read_text()))
+def samples(sb: Path = Depends(sandbox)) -> Response:
+    """The prepared scenarios, each with the runs it already has in this sandbox (oldest first)."""
+    conn = db.connect(sb)
+    try:
+        rows = conn.execute("SELECT r.id, r.status, r.decision, r.deciding_rule, i.sha256 FROM runs r "
+                            "JOIN invoices i ON i.id = r.invoice_id ORDER BY r.id").fetchall()
+    finally:
+        conn.close()
+    by_sha: dict[str, list[dict]] = {}
+    for r in rows:
+        by_sha.setdefault(r["sha256"], []).append(
+            {"id": r["id"], "status": r["status"], "decision": r["decision"], "deciding_rule": r["deciding_rule"]})
+    return J([{**{k: v for k, v in m.items() if k != "sha256"}, "runs": by_sha.get(m["sha256"], [])}
+              for m in _manifest()])
 
 
 @app.get("/api/samples/{sample_id}/pdf")
 def sample_pdf(sample_id: str):
-    m = next((s for s in json.loads((config.SAMPLES_DIR / "manifest.json").read_text()) if s["id"] == sample_id), None)
-    if m is None:
-        raise HTTPException(404, "Unknown sample")
+    m = _sample(sample_id)
     return FileResponse(config.SAMPLES_DIR / m["file"], media_type="application/pdf", filename=m["file"])
 
 
 @app.post("/api/runs")
-async def create_run(request: Request, file: UploadFile = File(...)) -> Response:
+async def create_run(request: Request, file: UploadFile = File(...), sb: Path = Depends(sandbox)) -> Response:
     data = await file.read()
-    return _start(request, data, Path(file.filename or "upload.pdf").name)
+    return _start(request, sb, data, Path(file.filename or "upload.pdf").name)
 
 
 @app.post("/api/runs/sample/{sample_id}")
-def create_sample_run(request: Request, sample_id: str) -> Response:
-    m = next((s for s in json.loads((config.SAMPLES_DIR / "manifest.json").read_text()) if s["id"] == sample_id), None)
-    if m is None:
-        raise HTTPException(404, "Unknown sample")
-    return _start(request, (config.SAMPLES_DIR / m["file"]).read_bytes(), m["file"])
+def create_sample_run(request: Request, sample_id: str, sb: Path = Depends(sandbox)) -> Response:
+    m = _sample(sample_id)
+    return _start(request, sb, (config.SAMPLES_DIR / m["file"]).read_bytes(), m["file"])
 
 
 @app.post("/api/runs/{run_id}/retry")
-def retry_run(request: Request, run_id: int) -> Response:
-    conn = db.connect()
+def retry_run(request: Request, run_id: int, sb: Path = Depends(sandbox)) -> Response:
+    conn = db.connect(sb)
     try:
         row = conn.execute("SELECT status FROM runs WHERE id = ?", (run_id,)).fetchone()
         # Claim the run atomically so two retry clicks can't execute it twice at once.
@@ -101,13 +144,13 @@ def retry_run(request: Request, run_id: int) -> Response:
         raise HTTPException(404, "Unknown run")
     if not claimed:
         raise HTTPException(409, "Only failed runs can be retried")
-    threading.Thread(target=request.app.state.runner.execute, args=(run_id,), daemon=True).start()
+    threading.Thread(target=_in_sandbox, args=(sb, request.app.state.runner.execute, run_id), daemon=True).start()
     return J({"run_id": run_id}, 202)
 
 
 @app.get("/api/runs")
-def list_runs(decision: str | None = None) -> Response:
-    conn = db.connect()
+def list_runs(decision: str | None = None, sb: Path = Depends(sandbox)) -> Response:
+    conn = db.connect(sb)
     try:
         return J({"runs": queries.list_runs(conn, decision), "stats": queries.stats(conn)})
     finally:
@@ -115,8 +158,8 @@ def list_runs(decision: str | None = None) -> Response:
 
 
 @app.get("/api/runs/{run_id}")
-def get_run(run_id: int) -> Response:
-    conn = db.connect()
+def get_run(run_id: int, sb: Path = Depends(sandbox)) -> Response:
+    conn = db.connect(sb)
     try:
         snap = queries.run_snapshot(conn, run_id)
     finally:
@@ -127,12 +170,12 @@ def get_run(run_id: int) -> Response:
 
 
 @app.get("/api/runs/{run_id}/stream")
-def stream_run(run_id: int):
+def stream_run(run_id: int, sb: Path = Depends(sandbox)):
     """Server-sent events: the full run snapshot whenever it changes, until the run finishes."""
     def gen():
         last, deadline = None, time.time() + 600
         while time.time() < deadline:
-            conn = db.connect()
+            conn = db.connect(sb)
             try:
                 snap = queries.run_snapshot(conn, run_id)
             finally:
@@ -153,8 +196,8 @@ def stream_run(run_id: int):
 
 
 @app.get("/api/invoices/{invoice_id}/pdf")
-def invoice_pdf(invoice_id: int):
-    conn = db.connect()
+def invoice_pdf(invoice_id: int, sb: Path = Depends(sandbox)):
+    conn = db.connect(sb)
     try:
         row = conn.execute("SELECT path, filename FROM invoices WHERE id = ?", (invoice_id,)).fetchone()
     finally:
@@ -170,11 +213,14 @@ class ResetBody(BaseModel):
 
 
 @app.post("/api/admin/reset")
-def reset(body: ResetBody, x_admin_token: str | None = Header(default=None)) -> Response:
-    if config.ADMIN_TOKEN and x_admin_token != config.ADMIN_TOKEN:
+def reset(body: ResetBody, sb: Path = Depends(sandbox), x_admin_token: str | None = Header(default=None)) -> Response:
+    """A sandbox belongs to one browser, so its owner can reset it freely. The default database is shared
+    and needs the admin token when one is configured."""
+    if sb == db.default_path() and config.ADMIN_TOKEN and x_admin_token != config.ADMIN_TOKEN:
         raise HTTPException(403, "Reset needs the admin token")
-    db.reset(clear_cache=body.clear_cache)
-    return J({"ok": True, "cache_cleared": body.clear_cache})
+    with db.use(sb):
+        db.reset(clear_cache=body.clear_cache)
+    return J({"ok": True, "cache_cleared": body.clear_cache, "sandbox": sb != db.default_path()})
 
 
 if config.FRONTEND_DIST.exists():

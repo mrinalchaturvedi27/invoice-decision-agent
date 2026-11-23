@@ -9,7 +9,14 @@ export default function Submit({ activeRunId }: { activeRunId: number | null }) 
   const [drag, setDrag] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { api<Sample[]>("/api/samples").then(setSamples).catch((e) => setError(e.message)); }, []);
+  // Re-read which steps have run in this sandbox whenever the selected run changes, and while runs are going.
+  useEffect(() => {
+    const load = () => api<Sample[]>("/api/samples").then(setSamples).catch((e) => setError(e.message));
+    load();
+    const t = setInterval(load, 3000);
+    return () => clearInterval(t);
+  }, [activeRunId]);
+  const nextId = samples.find((s) => s.runs.length === 0)?.id;
   const groups = useMemo(() => {
     const g = new Map<string, Sample[]>();
     samples.forEach((s) => g.set(s.group, [...(g.get(s.group) ?? []), s]));
@@ -48,8 +55,8 @@ export default function Submit({ activeRunId }: { activeRunId: number | null }) 
         <p className="text-xs text-slate-500 dark:text-slate-400">Drop a file here or click to choose · native or scanned</p>
       </div>
       <p className="-mt-2 px-1 text-[11px] leading-snug text-slate-500 dark:text-slate-400">
-        <span className="font-semibold text-slate-600 dark:text-slate-300">Shared workspace:</span> uploaded PDFs, extracted
-        fields and decisions are visible to everyone with this link. Use synthetic invoices only.
+        <span className="font-semibold text-slate-600 dark:text-slate-300">Your sandbox:</span> this browser has its own ledger
+        and history. There are no accounts, so anyone holding the sandbox id could read it. Use synthetic invoices only.
       </p>
 
       {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:bg-rose-500/10 dark:text-rose-300">{error}</p>}
@@ -60,35 +67,48 @@ export default function Submit({ activeRunId }: { activeRunId: number | null }) 
           <a href="#/history" className="text-xs text-slate-500 underline-offset-2 hover:underline">Reset in History</a>
         </div>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Run top to bottom. Each one runs against the ledger state the earlier ones left behind.
+          Run top to bottom. Each step expects the ledger the steps above it left. Steps already run in your
+          sandbox show their actual result; reset in History to replay from the seed.
         </p>
         <div className="mt-3 space-y-4">
           {groups.map(([group, items]) => (
             <div key={group}>
               <p className="mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">{group}</p>
               <ul className="space-y-1">
-                {items.map((s) => (
+                {items.map((s) => {
+                  const last = s.runs.at(-1);
+                  const differs = last?.decision && last.decision !== s.expected_decision;
+                  return (
                   <li key={s.id}>
                     <button
                       disabled={!!busy}
                       onClick={() => start(s.id, () => api(`/api/runs/sample/${s.id}`, { method: "POST" }))}
-                      className="group flex w-full items-start justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-slate-100 disabled:opacity-60 dark:hover:bg-slate-800"
+                      className={`group flex w-full items-start justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-slate-100 disabled:opacity-60 dark:hover:bg-slate-800 ${s.id === nextId ? "ring-1 ring-slate-300 dark:ring-slate-600" : ""}`}
                     >
-                      <span>
+                      <span className={last ? "text-slate-500 dark:text-slate-400" : ""}>
                         {busy === s.id ? "Starting…" : s.label}
                         {s.scan && <span className="ml-1.5 rounded bg-slate-200 px-1 py-px text-[10px] font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">SCAN</span>}
+                        {s.id === nextId && <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">next</span>}
                       </span>
                       <span className="shrink-0 opacity-70 group-hover:opacity-100" title={`Expected: ${s.expected_decision}${s.expected_rule ? " · " + s.expected_rule : ""}`}>
                         <DecisionPill decision={s.expected_decision} small />
                       </span>
                     </button>
+                    {last && (
+                      <a href={`#/run/${last.id}`}
+                         className={`block px-2 pb-1 text-[11px] underline-offset-2 hover:underline ${differs ? "text-amber-700 dark:text-amber-300" : "text-slate-500 dark:text-slate-400"}`}>
+                        ran{s.runs.length > 1 ? ` ${s.runs.length}×` : ""} here · run #{last.id} → {last.decision ?? last.status}
+                        {differs && " · not the expected result (out of order, or run twice?)"}
+                      </a>
+                    )}
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </div>
           ))}
         </div>
-        <p className="mt-3 text-[11px] text-slate-400">Pills show the expected outcome, for checking against the actual decision.</p>
+        <p className="mt-3 text-[11px] text-slate-400">Pills show the expected outcome when the steps are run in order from a fresh sandbox.</p>
       </div>
       {activeRunId && <a href="#/" className="block text-center text-xs text-slate-500 hover:underline">Clear selection</a>}
     </aside>

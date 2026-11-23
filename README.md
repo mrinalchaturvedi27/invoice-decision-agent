@@ -34,6 +34,9 @@ Tests use an isolated SQLite file per test. They replace Claude with `FixtureExt
 - a PO that belongs to another vendor;
 - the exact price-cap boundaries;
 - retry idempotency, and parallel approvals that must not overspend a PO;
+- two copies of one invoice racing to the ledger, giving one APPROVE and one HOLD linked to the winner;
+- a crash after posting, where the retry resumes from the recorded decision instead of re-deciding;
+- sandbox isolation and reset;
 - the HTTP and SSE surface;
 - the full demo order (`test_demo_sequence.py`).
 
@@ -48,8 +51,11 @@ Tests use an isolated SQLite file per test. They replace Claude with `FixtureExt
 
 **Fresh-input check:** `data/fresh/` is for a PDF that wasn't produced by the generator (for example, one typed in Google Docs and exported). No test fixture or cache covers it.
 
-## Who can see what (hosted demo)
-The hosted app is a **shared evaluator workspace**. Anyone with the URL can read run history, run details, extracted fields, and the original uploaded PDFs. Only **Reset demo ledger** is protected, by `ADMIN_TOKEN`. The upload panel says this, so use synthetic invoices only. If reviewers need to upload confidential invoices, those read endpoints (`/api/runs*`, `/api/invoices/*/pdf`) need access control before deployment.
+## Sandboxes: who can see what (hosted demo)
+- **Each browser gets its own sandbox ledger.** That is a separate SQLite file seeded with the same vendors and POs, keyed by a random 128-bit ID the page keeps in localStorage. Every reviewer starts from the seed, so E1·A always shows the advertised $48,000 → $28,000, whatever other reviewers have run.
+- The scenario list shows which steps have already run in your sandbox, with their actual results, and marks the next step. **History → Reset my sandbox** restores the seed without an admin token. **New sandbox** starts a fresh one and leaves the old one as it was.
+- **This is isolation, not access control.** There are no accounts, so anyone holding a sandbox ID can read that sandbox's runs and PDFs. The upload panel says this, so use synthetic invoices only. Confidential uploads would need real authentication in front of `/api/*`.
+- Requests that send no sandbox ID (curl, scripts) use the default database. Its reset needs `ADMIN_TOKEN`. The server caps sandboxes at `MAX_SANDBOXES` (500).
 
 ## First keyed rehearsal
 ```bash
@@ -82,4 +88,5 @@ For each generated sample, the script makes a live extraction call and compares 
 | `EXTRACT_EFFORT` | `medium` | Effort level for extraction |
 | `STAGE_PACING_MS` | `250` | Short pause between the instant rule stages so the live timeline is readable. Set `0` to disable. |
 | `DATA_DIR` | `./data` | Location of the database and uploaded PDFs |
-| `ADMIN_TOKEN` | unset | Required for reset when set |
+| `ADMIN_TOKEN` | unset | When set, required to reset the default (non-sandbox) database |
+| `MAX_SANDBOXES` | `500` | Cap on per-browser sandbox databases |

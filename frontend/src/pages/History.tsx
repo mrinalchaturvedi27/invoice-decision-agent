@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, DecisionPill, go, money, time } from "../lib";
+import { api, DecisionPill, go, money, startNewSandbox, time } from "../lib";
 import type { Decision, Health, HistoryRow, Stats } from "../types";
 
 const FILTERS: { key: Decision | null; label: string }[] = [
@@ -23,8 +23,12 @@ function Reset({ health, onDone }: { health: Health | null; onDone: () => void }
   return (
     <div className="card flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
       <div className="min-w-0 flex-1">
-        <p className="label">Demo ledger</p>
-        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Restore every PO to its seeded balance and clear run history to replay the scenarios.</p>
+        <p className="label">{health?.sandbox ? "Your sandbox ledger" : "Demo ledger"}</p>
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+          {health?.sandbox
+            ? "This browser has its own copy of the POs and its own history; other reviewers don't affect it. Reset restores the seeded balances so you can replay the scenarios."
+            : "Restore every PO to its seeded balance and clear run history to replay the scenarios."}
+        </p>
       </div>
       <label className="flex items-center gap-2 text-xs">
         <input type="checkbox" checked={clearCache} onChange={(e) => setClearCache(e.target.checked)} />
@@ -36,7 +40,14 @@ function Reset({ health, onDone }: { health: Health | null; onDone: () => void }
       )}
       <div className="flex gap-2">
         {!armed ? (
-          <button onClick={() => setArmed(true)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800">Reset demo ledger…</button>
+          <>
+            <button onClick={() => setArmed(true)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800">{health?.sandbox ? "Reset my sandbox…" : "Reset demo ledger…"}</button>
+            {health?.sandbox && (
+              <button onClick={() => { startNewSandbox(); window.location.hash = "#/"; window.location.reload(); }}
+                      title="Keep this sandbox as it is and start another with fresh balances"
+                      className="rounded-lg px-3 py-1.5 text-xs text-slate-500 hover:underline">New sandbox</button>
+            )}
+          </>
         ) : (
           <>
             <button onClick={reset} className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-700">Confirm reset</button>

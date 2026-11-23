@@ -65,6 +65,7 @@ export interface Snapshot {
 export interface Sample {
   id: string; file: string; group: string; label: string; scan: boolean;
   expected_decision: Decision; expected_rule: string | null;
+  runs: { id: number; status: string; decision: Decision | null; deciding_rule: string | null }[];
 }
 
 export interface HistoryRow {
@@ -78,4 +79,4 @@ export interface HistoryRow {
 
 export interface Stats { runs: number; APPROVE: number; HOLD: number; REJECT: number; error: number; running: number; approved_amount: number }
 
-export interface Health { status: string; policy_version: string; extract_model: string; model_credentials: boolean; stages: string[]; reset_requires_token: boolean }
+export interface Health { status: string; policy_version: string; extract_model: string; model_credentials: boolean; stages: string[]; sandbox: boolean; reset_requires_token: boolean }

@@ -19,3 +19,4 @@ STAGE_PACING_MS = int(os.environ.get("STAGE_PACING_MS", "250"))
 ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN")
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+MAX_SANDBOXES = int(os.environ.get("MAX_SANDBOXES", "500"))  # one SQLite file per reviewer browser
