@@ -59,6 +59,11 @@ export ANTHROPIC_API_KEY=...
 ```
 For each generated sample, the script makes a live extraction call and compares it field by field with what the PDF actually prints. It reports latency, mismatched values, and missing evidence even when the final decision would match. For a fresh PDF it prints the extraction and the verification rules it would face. It never touches the app database.
 
+**Result on 2026-11-23 (`claude-opus-5-5`, no cache):**
+- All 13 generated PDFs matched every printed field, with full evidence coverage on both scans. Each took 4.6–9.4 s.
+- Through the app, on a fresh ledger with an empty cache, all 14 demo steps reached their expected decision. Every explanation was written by Claude.
+- `data/fresh/crestline-chairs-chrome.pdf` was handwritten in HTML and printed by Chrome, so it went through neither the generator nor reportlab. Uploaded, it was approved against PO-3102, taking the balance from $3,720.00 to $1,240.00, in 9.8 s.
+
 ## Deploy (Render)
 `render.yaml` defines a Docker web service. It mounts a 1 GB disk at `/data` for SQLite and uploads, which needs a paid instance. Set `ANTHROPIC_API_KEY` in the dashboard. `ADMIN_TOKEN` is generated automatically and protects **Reset demo ledger** on the public URL.
 
